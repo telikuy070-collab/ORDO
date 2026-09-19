@@ -100,6 +100,7 @@
 - **Сущности**: `ImportJob`, `ExportJob`, `Mapping`.
 - **Порты**: `IExcelParser`, `IExcelGenerator`.
 - **Use-cases**: `ImportFromExcel`, `ExportToExcel`.
+- **Реализация (фаза 3)**: `packages/infrastructure/src/excel/index.ts` — SheetJS (xlsx@0.18.5), поддержка xlsx (binary) и csv (text) для импорта; csv и xlsx для экспорта. `SupabaseExcelParser`/`SupabaseExcelGenerator` в `repositories/import-export.ts` делегируют в `ExcelParser`/`ExcelGenerator`. Coverage domain — 100%.
 
 ### 3.7. Analytics
 - **Ответственность**: нагрузка, отчёты, метрики.

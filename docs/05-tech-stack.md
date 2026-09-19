@@ -9,15 +9,16 @@
 | Слой | Выбор | Версия | Обоснование |
 |---|---|---|---|
 | Framework | **React** | 19.3 | Актуальный стандарт 2026 |
-| Сборка | **Vite** | 6 | Enterprise-ready, monorepo-поддержка |
-| Роутинг | **TanStack Router** | latest | TS-first, data loaders |
-| Server state | **TanStack Query** | latest | Стандарт для server state |
-| Client state | **Zustand** | latest | Минималистичный |
-| UI | **TailwindCSS** | 4 | Гибкость |
-| UI components | **Radix UI** | latest | Доступность |
-| PWA | **vite-plugin-pwa** | latest | Офлайн, SW, manifest |
-| Формы | **React Hook Form** | latest | Производительность |
-| Валидация | **Zod** | latest | Типы + runtime |
+| Сборка | **Vite** | 6.4.3 | Enterprise-ready, monorepo-поддержка |
+| Роутинг | **TanStack Router** | 1.170.38 | TS-first, code-based routing |
+| Server state | **TanStack Query** | 5.103.1 | Стандарт для server state |
+| Client state | **Zustand** | 4.5.7 | Минималистичный |
+| UI | **TailwindCSS** | 3.4.19 | Гибкость |
+| UI components | **Radix UI** | 2.1.x | Доступность |
+| PWA | **vite-plugin-pwa** | 0.20.5 | Офлайн, SW, manifest |
+| Формы | **React Hook Form** | 7.88.0 | Производительность |
+| Валидация | **Zod** | 3.25.76 | Типы + runtime |
+| Excel | **SheetJS (xlsx)** | 0.18.5 | Парсинг + генерация |
 
 ---
 

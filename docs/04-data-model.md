@@ -37,7 +37,10 @@
 - `notifications`, `subscriptions`
 
 ### ImportExport
-- `import_jobs`, `export_jobs`, `mappings`
+- `import_jobs`, `export_jobs`, `mappings` — реализованы в `supabase/migrations/001_import_export.sql`.
+- `tenants` — таблица-корень для `tenant_id` (FK ON DELETE CASCADE).
+- RLS: `import_jobs_tenant_isolation`, `export_jobs_tenant_isolation`, `mappings_tenant_isolation`, `tenants_self_isolation`.
+- Helper `current_tenant_id()` — stub, owner должен реализовать через JWT-claim.
 
 ### Analytics
 - `workload_reports`, `teacher_loads`, `group_loads`
@@ -287,6 +290,19 @@ SELECT cron.schedule('drop-old-audit', '0 0 1 * *',
 ## 10. Миграции
 
 `supabase/migrations/` — см. структуру в конце файла.
+
+### Реализованные миграции (фаза 5)
+
+| Миграция | Содержимое |
+|---|---|
+| `001_import_export.sql` | `tenants`, `import_jobs`, `export_jobs`, `mappings`, индексы, триггер `set_updated_at`, RLS-политики, helper `current_tenant_id()` (stub) |
+| `seed/001_import_export.sql` | Тестовые тенанты и jobs для локальной разработки |
+
+### План (owner)
+- Миграции для модулей identity, academic, resources, scheduling, publication, analytics, audit — по порядку.
+- `has_role()` / `has_feature()` — в `002_identity.sql`.
+- `public_groups` / `public_schedule` view — в соответствующих миграциях.
+- `audit_events` партиционирование — в `009_audit.sql`.
 
 ---
 
