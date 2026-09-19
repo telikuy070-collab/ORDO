@@ -43,3 +43,27 @@ YYYY-MM-DD
 
 ## Альтернативы
 Что ещё рассматривали. Почему отказались.
+```
+
+## Текущий статус реализации
+
+На данный момент монорепозиторий закрывает все базовые bounded contexts в соответствии с архитектурой Clean Architecture:
+
+- Identity ✅
+- Academic ✅
+- Resources ✅
+- Scheduling ✅
+- Publication ✅
+- ImportExport ✅ (coverage 100%, SheetJS)
+- Analytics ✅
+- Audit ✅
+
+Дальнейшая работа идёт по расширению и стабилизации продуктовой обвязки вокруг уже закрытых модулей: UI, интеграция с Supabase, приложение workspace/student и тонкая настройка сценариев публикации/аудита.
+
+В каждом модуле сохраняется схема:
+- domain: сущности, value objects, ошибки, события;
+- application: use-cases, порты, DTO;
+- infrastructure: реализации репозиториев и интеграция с Supabase;
+- тесты: unit- и use-case проверки.
+
+---
