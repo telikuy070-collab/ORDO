@@ -1,0 +1,19 @@
+{
+  "buildCommand": "pnpm install && pnpm --filter workspace build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "installCommand": "pnpm install",
+  "rewrites": [
+    { "source": "/service-worker.js", "destination": "/service-worker.js" }
+  ],
+  "headers": [
+    {
+      "source": "/manifest.json",
+      "headers": { "Cache-Control": "public, max-age=86400" }
+    },
+    {
+      "source": "/(icon-192\\.png|icon-512\\.png|favicon\\.svg)",
+      "headers": { "Cache-Control": "public, max-age=86400" }
+    }
+  ]
+}
