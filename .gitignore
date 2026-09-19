@@ -2,40 +2,45 @@
 node_modules/
 .pnpm-store/
 
-# Build
+# Build outputs
 dist/
 build/
-.next/
-.turbo/
 *.tsbuildinfo
 
 # Environment
 .env
 .env.local
 .env.*.local
-.env.development
-.env.production
-.env.staging
-!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
 
 # Logs
 *.log
 npm-debug.log*
 pnpm-debug.log*
 
-# OS
-.DS_Store
-Thumbs.db
+# Testing
+coverage/
+.nyc_output/
 
-# IDE
-.vscode/
-.idea/
-*.swp
+# Turbo
+.turbo/
 
 # Supabase
 supabase/.temp/
-supabase/.branches/
+supabase/functions/**/node_modules/
+
+# Vercel
+.vercel/
 
 # Misc
-coverage/
-.cache/
+*.tsbuildinfo
+.eslintcache

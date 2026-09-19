@@ -1,0 +1,67 @@
+{
+  "name": "@ordo/domain",
+  "version": "0.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    },
+    "./identity": {
+      "types": "./dist/identity/index.d.ts",
+      "import": "./dist/identity/index.js",
+      "require": "./dist/identity/index.js"
+    },
+    "./academic": {
+      "types": "./dist/academic/index.d.ts",
+      "import": "./dist/academic/index.js",
+      "require": "./dist/academic/index.js"
+    },
+    "./resources": {
+      "types": "./dist/resources/index.d.ts",
+      "import": "./dist/resources/index.js",
+      "require": "./dist/resources/index.js"
+    },
+    "./scheduling": {
+      "types": "./dist/scheduling/index.d.ts",
+      "import": "./dist/scheduling/index.js",
+      "require": "./dist/scheduling/index.js"
+    },
+    "./publication": {
+      "types": "./dist/publication/index.d.ts",
+      "import": "./dist/publication/index.js",
+      "require": "./dist/publication/index.js"
+    },
+    "./import-export": {
+      "types": "./dist/import-export/index.d.ts",
+      "import": "./dist/import-export/index.js",
+      "require": "./dist/import-export/index.js"
+    },
+    "./analytics": {
+      "types": "./dist/analytics/index.d.ts",
+      "import": "./dist/analytics/index.js",
+      "require": "./dist/analytics/index.js"
+    },
+    "./audit": {
+      "types": "./dist/audit/index.d.ts",
+      "import": "./dist/audit/index.js",
+      "require": "./dist/audit/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint . --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --coverage --passWithNoTests"
+  },
+  "devDependencies": {
+    "@ordo/config": "workspace:*",
+    "@ordo/types": "workspace:*",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0",
+    "@vitest/coverage-v8": "^2.0.0"
+  }
+}

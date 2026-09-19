@@ -1,0 +1,15 @@
+{
+  "extends": "../config/tsconfig.react.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "esModuleInterop": true,
+    "paths": {
+      "@ordo/types": ["../types/src"],
+      "@ordo/types/*": ["../types/src/*"],
+      "@ordo/config": ["../config"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

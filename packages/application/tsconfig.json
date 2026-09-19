@@ -1,0 +1,25 @@
+{
+  "extends": "@ordo/config/tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "declaration": true,
+    "declarationMap": true,
+    "noEmit": false,
+    "paths": {
+      "@ordo/domain": ["../domain/dist"],
+      "@ordo/domain/identity": ["../domain/dist/identity/index.d.ts"],
+      "@ordo/domain/academic": ["../domain/dist/academic/index.d.ts"],
+      "@ordo/domain/resources": ["../domain/dist/resources/index.d.ts"],
+      "@ordo/domain/scheduling": ["../domain/dist/scheduling/index.d.ts"],
+      "@ordo/domain/publication": ["../domain/dist/publication/index.d.ts"],
+      "@ordo/domain/import-export": ["../domain/dist/import-export/index.d.ts"],
+      "@ordo/domain/analytics": ["../domain/dist/analytics/index.d.ts"],
+      "@ordo/domain/audit": ["../domain/dist/audit/index.d.ts"],
+      "@ordo/types": ["../types/dist"],
+      "@ordo/config": ["../config"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}

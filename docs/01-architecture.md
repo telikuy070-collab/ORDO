@@ -17,73 +17,50 @@
 ### Внешние системы
 - **Supabase** — Postgres + RLS + Auth + Realtime + Edge Functions.
 - **Vercel** — деплой.
-- **GitHub** — хранение кода.
+- **Upstash** — Rate limiting, Redis кэш.
 
 ---
 
 ## 2. Контейнеры (C4 Level 2)
-┌─────────────────────────────────────────────────────────────┐
-│ ПОЛЬЗОВАТЕЛИ │
-│ Зам, Преподаватель, Студент, Зав. отделением, Директор │
-└──────────┬──────────────────────────────────┬───────────────┘
-│ │
-▼ ▼
-┌──────────────────────┐ ┌──────────────────────┐
-│ apps/workspace │ │ apps/student │
-│ (PWA для staff) │ │ (PWA для студентов) │
-│ │ │ │
-│ — React 19.3 │ │ — React 19.3 │
-│ — Vite 6 │ │ — Vite 6 │
-│ — Логин (Supabase) │ │ — Без логина │
-│ — Realtime │ │ — Офлайн-first │
-└──────────┬───────────┘ └──────────┬───────────┘
-│ │
-│ packages/* (общие) │
-│ ┌────────────────────┐ │
-└──────┤ domain │──────┘
-│ application │
-│ infrastructure │
-│ ui, types, config │
-└─────────┬──────────┘
-│
-▼
-┌────────────────────────────────┐
-│ SUPABASE │
-│ ┌──────────────────────────┐ │
-│ │ Postgres 16 + RLS │ │
-│ ├──────────────────────────┤ │
-│ │ Auth (staff only) │ │
-│ ├──────────────────────────┤ │
-│ │ Realtime │ │
-│ ├──────────────────────────┤ │
-│ │ Edge Functions (Deno) │ │
-│ ├──────────────────────────┤ │
-│ │ Storage │ │
-│ └──────────────────────────┘ │
-└────────────────────────────────┘
 
-text
+### ПОЛЬЗОВАТЕЛИ
+- Зам, Преподаватель, Студент, Зав. отделением, Директор.
 
-### apps/workspace
-- **Для кого**: зам, преподаватели, зав. отделениями.
-- **Логин**: обязателен (Supabase Auth).
-- **Роли**: `schedule_owner`, `teacher`, `department_head`, `tenant_admin`.
-- **Функции**: дашборд, редактор расписания, аналитика, экспорт.
+#### ▼ ▼
 
-### apps/student
-- **Для кого**: студенты, гости.
-- **Логин**: не нужен (аноним).
-- **Роли**: `anon`.
-- **Функции**: просмотр расписания, поиск, QR, офлайн.
-
-### packages/*
-- **domain** — сущности, value objects, инварианты. Ноль зависимостей.
-- **application** — use-cases, порты, DTO.
-- **infrastructure** — Supabase, Excel, storage.
-- **ui** — дизайн-система.
-- **types** — DTO, общие типы.
-- **config** — eslint, tsconfig, prettier.
-
+#### ┌──────────────────────┐ ┌──────────────────────┐
+#### │ apps/workspace │ │ apps/student │
+#### │ (PWA для staff) │ │ (PWA для студентов) │
+#### │ │ │ │
+#### │ — React 19.3 │ │ — React 19.3 │
+#### │ — Vite 6 │ │ — Vite 6 │
+#### │ — Логин (Supabase Auth) │ │ — Без логина │
+#### │ — Realtime │ │ — Polling (раз в 5 мин) │
+#### └──────────┬───────────┘ └──────────┬───────────┘
+#### │ │
+#### │ packages/* (общие) │
+#### ┌────────────────────┐ │
+#### └──────┤ domain │──────┘
+#### application │
+#### infrastructure │
+#### ui, types, config │
+#### └─────────┬──────────┘
+#### │
+#### ▼
+#### ┌────────────────────────────────┐
+#### │ SUPABASE │
+#### │ ┌──────────────────────────┐ │
+#### │ │ Postgres 16 + RLS │ │
+#### │ ├──────────────────────────┤ │
+#### │ │ Auth (staff only) │ │
+#### │ ├──────────────────────────┤ │
+#### │ │ Realtime │ │
+#### │ ├──────────────────────────┤ │
+#### │ │ Edge Functions (Deno) │ │
+#### │ ├──────────────────────────┤ │
+#### │ │ Storage │ │
+#### │ └──────────────────────────┘ │
+#### └────────────────────────────────┘
 ---
 
 ## 3. Компоненты (C4 Level 3)
@@ -139,9 +116,8 @@ text
 ---
 
 ## 4. Правила зависимостей
-Domain ← Application ← Infrastructure ← Presentation
 
-text
+Domain ← Application ← Infrastructure ← Presentation
 
 - **Domain** — ноль зависимостей.
 - **Application** — только `domain`.
@@ -161,9 +137,7 @@ text
 → domain.Schedule.publish()
 → infrastructure.SupabaseRepository.save()
 → Supabase (Postgres + Realtime)
-→ student PWA (Realtime → обновление)
-
-text
+→ student PWA (Realtime → обновление) — **только для authenticated**
 
 ### 5.2. Просмотр расписания студентом
 Студент → student PWA → application.GetPublicSchedule
@@ -171,19 +145,16 @@ text
 → Supabase (public_schedule view)
 → отображение
 
-text
-
 ### 5.3. Импорт Excel
 Зам → workspace → application.ImportFromExcel
 → infrastructure.ExcelParser.parse()
 → domain.Curriculum.create()
 → infrastructure.SupabaseRepository.save()
 
-text
-
 ---
 
 ## 6. Деплой
+
 GitHub (main) → Vercel
 ├── workspace.ordo.app
 └── student.ordo.app
@@ -194,8 +165,6 @@ Supabase
 ├── Realtime
 └── Edge Functions
 
-text
-
 ---
 
 ## 7. Что НЕ входит (Architecture Boundaries)
@@ -204,16 +173,54 @@ text
 - ❌ Отдельный backend (кроме Supabase).
 - ❌ Мобильные приложения.
 - ❌ SSR (только SPA/PWA).
-- ❌ Собственная БД (только Supabase).
 
 ---
 
-## 8. Ссылки
+## 8. Rate Limiting
+
+### 8.1. Anon-запросы
+Все анонимные запросы проходят через Edge Function с Rate Limiting (Upstash).
+
+- `get-public-features`: `slidingWindow(30, '1 m')`
+- `public-schedule`: `slidingWindow(60, '1 m')`
+
+### 8.2. Кэш Upstash Redis
+- `get-public-features`: кэш 1 минута (`max-age=60`).
+- `public-schedule`: кэш 5 минут (`max-age=300`).
+
+### 8.3. Почему не Cloudflare?
+Cloudflare Workers Cache не покрывает PostgREST напрямую. Middleware добавляет сложность.
+
+### 8.4. Почему не капча?
+Капча убивает UX для студентов, ищущих расписание. Rate limiting эффективнее.
+
+---
+
+## 9. Realtime
+
+### 9.1. Только для authenticated
+Realtime subscribers должны проходить Auth (Supabase Auth). Anon-подписки отключены.
+
+### 9.2. student PWA
+Student PWA **не использует Realtime** по умолчанию. Обновления раз в 5 минут через polling.
+
+### 9.3. Fallback
+Fallback механизмы: `LISTEN/NOTIFY` (WebSocket) или polling (30 сек). ElectricSQL — план исследований.
+
+### 9.4. ALTER PUBLICATION
+```sql
+ALTER PUBLICATION supabase_realtime DROP TABLE audit_events;
+-- anon не имеет доступа к Realtime
+```
+
+---
+
+## 10. Ссылки
 
 - [Vision](00-vision.md)
 - [Domain Model](02-domain-model.md)
 - [RBAC](03-rbac.md)
 - [Data Model](04-data-model.md)
 - [Tech Stack](05-tech-stack.md)
-- [ADR](../adr/)
-- [RFC](../rfc/)
+- [ADR](adr/)
+- [RFC](rfc/)
