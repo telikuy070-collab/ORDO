@@ -1,7 +1,9 @@
-// Tailwind configuration for the workspace PWA.
-// Source of truth for colors: packages/ui/src/theme/index.ts (exported as @ordo/ui/theme).
-// The flat object below mirrors that file so PostCSS can resolve classes such as
-// `bg-surface`, `text-text-primary`, `bg-brand-600`, `bg-error`.
+/* eslint-disable no-undef */
+// Tailwind configuration for the student PWA.
+// Source of truth for colors: packages/ui/src/theme/index.ts
+// (exported as @ordo/ui/theme). The flat object below mirrors that file
+// so PostCSS can resolve classes such as `bg-surface`, `text-text-primary`,
+// `bg-brand-600`, `bg-error`.
 
 const colors = {
   'brand-50': '#eff6ff',
@@ -29,7 +31,8 @@ const colors = {
   'border-surface': '#e2e8f0',
 };
 
-export default {
+/** @type {import('tailwindcss').Config} */
+module.exports = {
   content: [
     './src/**/*.{ts,tsx}',
     '../../packages/ui/src/**/*.{ts,tsx}',

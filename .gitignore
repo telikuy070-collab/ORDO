@@ -6,6 +6,13 @@ node_modules/
 dist/
 build/
 *.tsbuildinfo
+apps/*/dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
 
 # Environment
 .env

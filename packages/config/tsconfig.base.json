@@ -42,5 +42,5 @@
     }
   },
   "include": ["."],
-  "exclude": ["node_modules", "dist", "apps"]
+  "exclude": ["node_modules", "dist", "apps", "supabase", "../../../supabase"]
 }

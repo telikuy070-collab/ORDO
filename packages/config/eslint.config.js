@@ -3,10 +3,18 @@ import importPlugin from 'eslint-plugin-import';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  js.configs.recommended,
-  ...tseslint.configs.recommended,
   {
     files: ['**/*.js', '**/*.ts'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        module: 'readonly',
+        require: 'readonly',
+        process: 'readonly',
+        Deno: 'readonly',
+      },
+    },
     plugins: {
       import: importPlugin,
     },
@@ -29,6 +37,8 @@ export default tseslint.config(
       'no-console': ['warn', { allow: ['warn', 'error'] }],
     },
   },
+  js.configs.recommended,
+  ...tseslint.configs.recommended,
   {
     ignores: ['**/dist/**', '**/node_modules/**'],
   }

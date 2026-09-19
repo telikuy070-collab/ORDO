@@ -1,0 +1,36 @@
+# Supabase project configuration for Ordo.
+# Managed by the Supabase CLI: `supabase link`, `supabase db push`, `supabase functions deploy`.
+
+project_id = "dtxmuvsrrywpcchvlacv"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+
+[api.schemas]
+public = "public"
+
+[db]
+port = 54322
+ssl_mode = "require"
+
+[auth]
+enabled = true
+site_url = "https://ordo.app"
+disable_signup = false
+
+[auth.external]
+email = { enabled = true }
+
+[realtime]
+enabled = true
+channels = ["*"]
+
+[storage]
+enabled = true
+
+[functions]
+# Edge Functions live in supabase/functions/<name>/index.ts
+verify_jwt = true
