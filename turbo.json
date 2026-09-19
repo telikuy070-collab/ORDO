@@ -25,6 +25,10 @@
     },
     "db:generate": {
       "dependsOn": []
+    },
+    "db:test": {
+      "dependsOn": ["db:generate"],
+      "outputs": []
     }
   },
   "globalDependencies": [".env*"]

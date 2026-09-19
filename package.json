@@ -11,6 +11,7 @@
     "typecheck": "turbo run typecheck",
     "db:push": "turbo run db:push",
     "db:generate": "turbo run db:generate",
+    "db:test": "supabase test db --project-ref \"$SUPABASE_PROJECT_REF\" supabase/tests/*.sql",
     "format": "prettier --write \"**/*.{ts,tsx,json,md}\""
   },
   "devDependencies": {
@@ -35,6 +36,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.53.0",
+    "supabase": "^2.117.0",
     "tailwindcss": "^3.4.0",
     "turbo": "^2.0.0",
     "typescript": "^5.5.0",
