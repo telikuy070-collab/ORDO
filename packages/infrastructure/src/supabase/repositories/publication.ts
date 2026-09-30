@@ -15,9 +15,51 @@ import {
 import type { PaginatedResponse } from '@ordo/types';
 import { SupabaseBaseRepository, toCamelCase, toSnakeCase } from './base';
 
+/** Raised when the database refuses to publish because of hard conflicts. */
+export class PublishBlockedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'PublishBlockedError';
+  }
+}
+
 export class SupabasePublishedScheduleRepository extends SupabaseBaseRepository implements IPublishedScheduleRepository {
   constructor() {
     super({ tableName: 'published_schedules', tenantIdColumn: 'tenant_id' });
+  }
+
+  /**
+   * Publishes a schedule version.
+   *
+   * The database owns the decision: publish_schedule_version runs the hard
+   * conflict check, takes the row lock and writes the publication in a single
+   * statement. Doing this from the client with separate calls would allow a
+   * conflicting or half-written publication.
+   *
+   * Rejects with a PublishBlockedError for OR002 (hard conflicts) so the UI can
+   * distinguish "you may not publish" from "the schedule is not publishable yet".
+   */
+  async publishVersion(versionId: string): Promise<{ publicationId: string; scheduleId: string }> {
+    const { data, error } = await this.client.rpc('publish_schedule_version', {
+      p_version_id: versionId,
+    });
+
+    if (error) {
+      if (error.code === 'OR002') {
+        throw new PublishBlockedError(error.message);
+      }
+      throw new Error(`Не удалось опубликовать расписание: ${error.message}`);
+    }
+    if (!data) {
+      throw new Error('Публикация не вернула результат');
+    }
+
+    const result = data as unknown as {
+      publicationId: string;
+      scheduleId: string;
+      versionId: string;
+    };
+    return { publicationId: result.publicationId, scheduleId: result.scheduleId };
   }
 
   async findById(id: string): Promise<PublishedSchedule | null> {
