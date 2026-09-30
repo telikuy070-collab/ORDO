@@ -9,6 +9,7 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
+    "verify": "pnpm typecheck && pnpm lint && pnpm test && pnpm build",
     "db:push": "turbo run db:push",
     "db:generate": "turbo run db:generate",
     "db:test": "supabase test db --project-ref \"$SUPABASE_PROJECT_REF\" supabase/tests/*.sql",
