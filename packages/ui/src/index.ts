@@ -46,6 +46,9 @@ export type { TabsProps, TabOption } from './components/Tabs';
 export { AppShell } from './components/AppShell';
 export type { AppShellProps, NavItem } from './components/AppShell';
 
+export { ScheduleGrid } from './components/ScheduleGrid';
+export type { ScheduleGridProps, TimeSlot, Lesson } from './components/ScheduleGrid';
+
 export { ToastProvider, useToast } from './components/Toast';
 export type { ToastVariant } from './components/Toast';
 
@@ -54,4 +57,5 @@ export type { ConfirmDialogProps } from './components/ConfirmDialog';
 
 export { FieldError } from './components/FieldError';
 
+export { FormField } from './components/FormField';
 export type { FormFieldProps } from './components/FormField';
