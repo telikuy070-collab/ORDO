@@ -7,7 +7,9 @@
     <meta name="theme-color" content="#2563eb" />
     <meta name="description" content="Ordo — платформа управления учебным расписанием" />
     <title>Ordo — workspace</title>
-    <link rel="manifest" href="/manifest.json" />
+    <!-- The PWA manifest is injected by vite-plugin-pwa as
+         /manifest.webmanifest. A hand-written link to /manifest.json would
+         404 into the SPA fallback HTML and break parsing. -->
     <link rel="apple-touch-icon" href="/icon-192.png" />
   </head>
   <body class="bg-surface text-text-primary">

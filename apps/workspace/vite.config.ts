@@ -6,6 +6,10 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   root: '.',
+  // Env lives in the repository root so there is a single source of truth for
+  // both PWAs. Without this, Vite only looks in apps/workspace and the
+  // VITE_SUPABASE_* variables are undefined in the bundle.
+  envDir: '../..',
   plugins: [
     react(),
     VitePWA({
@@ -27,17 +31,21 @@ export default defineConfig({
     }),
   ],
   resolve: {
+    // Exact-match aliases are anchored with `$` so that a bare specifier such
+    // as `@ordo/domain` never swallows a subpath import like
+    // `@ordo/domain/scheduling`, which would resolve to `index.ts/scheduling`.
+    // Subpaths are directory modules, so they map to `<module>/index.ts`.
     alias: [
-      { find: '@ordo/domain', replacement: '../../packages/domain/src/index.ts' },
-      { find: /^@ordo\/domain\/(.+)$/, replacement: '../../packages/domain/src/$1.ts' },
-      { find: '@ordo/application', replacement: '../../packages/application/src/index.ts' },
-      { find: /^@ordo\/application\/(.+)$/, replacement: '../../packages/application/src/$1.ts' },
-      { find: '@ordo/infrastructure', replacement: '../../packages/infrastructure/src/index.ts' },
-      { find: /^@ordo\/infrastructure\/(.+)$/, replacement: '../../packages/infrastructure/src/$1.ts' },
-      { find: '@ordo/types', replacement: '../../packages/types/src/index.ts' },
-      { find: /^@ordo\/types\/(.+)$/, replacement: '../../packages/types/src/$1.ts' },
-      { find: '@ordo/ui', replacement: '../../packages/ui/src/index.ts' },
-      { find: /^@ordo\/ui\/(.+)$/, replacement: '../../packages/ui/src/$1.ts' },
+      { find: /^@ordo\/domain$/, replacement: '../../packages/domain/src/index.ts' },
+      { find: /^@ordo\/domain\/(.+)$/, replacement: '../../packages/domain/src/$1/index.ts' },
+      { find: /^@ordo\/application$/, replacement: '../../packages/application/src/index.ts' },
+      { find: /^@ordo\/application\/(.+)$/, replacement: '../../packages/application/src/$1/index.ts' },
+      { find: /^@ordo\/infrastructure$/, replacement: '../../packages/infrastructure/src/index.ts' },
+      { find: /^@ordo\/infrastructure\/(.+)$/, replacement: '../../packages/infrastructure/src/$1/index.ts' },
+      { find: /^@ordo\/types$/, replacement: '../../packages/types/src/index.ts' },
+      { find: /^@ordo\/types\/(.+)$/, replacement: '../../packages/types/src/$1/index.ts' },
+      { find: /^@ordo\/ui$/, replacement: '../../packages/ui/src/index.ts' },
+      { find: /^@ordo\/ui\/(.+)$/, replacement: '../../packages/ui/src/$1/index.ts' },
     ],
   },
   css: {

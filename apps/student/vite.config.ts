@@ -6,6 +6,10 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   root: '.',
+  // Env lives in the repository root so there is a single source of truth for
+  // both PWAs. Without this, Vite only looks in apps/student and the
+  // VITE_SUPABASE_* variables are undefined in the bundle.
+  envDir: '../..',
   plugins: [
     react(),
     VitePWA({
