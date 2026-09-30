@@ -26,6 +26,7 @@
     "@dnd-kit/modifiers": "^9.0.0",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
+    "@ordo/i18n": "workspace:*",
     "@ordo/types": "workspace:*",
     "@tanstack/react-query": "^5.62.0",
     "recharts": "^3.10.1"

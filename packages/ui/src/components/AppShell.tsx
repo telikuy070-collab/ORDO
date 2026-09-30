@@ -10,10 +10,12 @@ export interface NavItem {
 export interface AppShellProps {
   children: ReactNode;
   nav?: NavItem[];
-  user?: { name: string; role: string; onLogout?: () => void };
+  user?: { name: string; role: string; onLogout?: () => void; logoutLabel: string };
+  /** Rendered in the header next to the user block, e.g. a language switch. */
+  headerExtra?: ReactNode;
 }
 
-export function AppShell({ children, nav, user }: AppShellProps) {
+export function AppShell({ children, nav, user, headerExtra }: AppShellProps) {
   return (
     <div className="min-h-screen bg-surface text-text-primary">
       <header className="sticky top-0 z-40 border-b border-surface-border bg-surface-card">
@@ -31,16 +33,23 @@ export function AppShell({ children, nav, user }: AppShellProps) {
               </a>
             ))}
           </nav>
-          {user && (
-            <div className="flex items-center gap-3">
-              <span className="hidden text-sm text-text-secondary sm:inline">{user.name}</span>
-              {user.onLogout && (
-                <button type="button" onClick={user.onLogout} className="text-sm text-text-secondary hover:text-text-primary">
-                  Logout
-                </button>
-              )}
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            {headerExtra}
+            {user && (
+              <>
+                <span className="hidden text-sm text-text-secondary sm:inline">{user.name}</span>
+                {user.onLogout && (
+                  <button
+                    type="button"
+                    onClick={user.onLogout}
+                    className="text-sm text-text-secondary hover:text-text-primary"
+                  >
+                    {user.logoutLabel}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </header>
       <main className="container-app py-6">{children}</main>

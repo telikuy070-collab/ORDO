@@ -51,6 +51,8 @@ export default defineConfig({
       { find: /^@ordo\/application\/(.+)$/, replacement: pkg('application/src/$1/index.ts') },
       { find: /^@ordo\/infrastructure$/, replacement: pkg('infrastructure/src/index.ts') },
       { find: /^@ordo\/infrastructure\/(.+)$/, replacement: pkg('infrastructure/src/$1/index.ts') },
+      { find: /^@ordo\/i18n$/, replacement: pkg('i18n/src/index.ts') },
+      { find: /^@ordo\/i18n\/(.+)$/, replacement: pkg('i18n/src/$1/index.ts') },
       { find: /^@ordo\/types$/, replacement: pkg('types/src/index.ts') },
       { find: /^@ordo\/types\/(.+)$/, replacement: pkg('types/src/$1/index.ts') },
       { find: /^@ordo\/ui$/, replacement: pkg('ui/src/index.ts') },

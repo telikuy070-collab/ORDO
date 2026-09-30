@@ -3,6 +3,7 @@ import { createRouter, RouterProvider } from '@tanstack/react-router';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 
+import { I18nProvider } from '@ordo/i18n';
 import { ToastProvider } from '@ordo/ui';
 
 import { SessionProvider } from './auth/session';
@@ -23,11 +24,13 @@ const router = createRouter({ routeTree });
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        <SessionProvider>
-          <RouterProvider router={router} />
-        </SessionProvider>
-      </ToastProvider>
+      <I18nProvider>
+        <ToastProvider>
+          <SessionProvider>
+            <RouterProvider router={router} />
+          </SessionProvider>
+        </ToastProvider>
+      </I18nProvider>
     </QueryClientProvider>
   );
 }

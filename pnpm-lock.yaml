@@ -110,6 +110,9 @@ importers:
       '@ordo/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@ordo/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@ordo/infrastructure':
         specifier: workspace:*
         version: link:../../packages/infrastructure
@@ -171,6 +174,9 @@ importers:
       '@ordo/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@ordo/i18n':
+        specifier: workspace:*
+        version: link:../../packages/i18n
       '@ordo/infrastructure':
         specifier: workspace:*
         version: link:../../packages/infrastructure
@@ -306,6 +312,25 @@ importers:
         specifier: ^2.0.0
         version: 2.1.9(@types/node@24.19.0)(terser@5.51.2)
 
+  packages/i18n:
+    dependencies:
+      react:
+        specifier: ^19.0.0
+        version: 19.3.0
+    devDependencies:
+      '@ordo/config':
+        specifier: workspace:*
+        version: link:../config
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.3.0
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.0.0
+        version: 2.1.9(@types/node@24.19.0)(terser@5.51.2)
+
   packages/infrastructure:
     dependencies:
       '@ordo/application':
@@ -363,6 +388,9 @@ importers:
       '@dnd-kit/utilities':
         specifier: ^3.2.2
         version: 3.2.2(react@19.3.0)
+      '@ordo/i18n':
+        specifier: workspace:*
+        version: link:../i18n
       '@ordo/types':
         specifier: workspace:*
         version: link:../types

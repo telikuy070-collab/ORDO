@@ -17,6 +17,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import React, { useCallback, useMemo } from 'react';
 
+import { useI18n, type TranslationKey } from '@ordo/i18n';
 import { Card } from './Card';
 
 export interface TimeSlot {
@@ -52,7 +53,7 @@ export interface ScheduleGridProps {
   readOnly?: boolean;
 }
 
-const DAYS = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
+const DAYS = ['day.monday', 'day.tuesday', 'day.wednesday', 'day.thursday', 'day.friday', 'day.saturday', 'day.sunday'] as const;
 const PAIRS = [
   { number: 1, time: '08:30–10:00' },
   { number: 2, time: '10:10–11:40' },
@@ -122,6 +123,7 @@ function TimeSlotCell({ timeSlot, lessons, onLessonRemove, readOnly, selectedWee
   readOnly?: boolean;
   selectedWeekType: 'all' | 'odd' | 'even';
 }) {
+  const { t } = useI18n();
   const { setNodeRef, isOver } = useDroppable({ id: timeSlot.id });
   const slotLessons = lessons.filter(lesson =>
     lesson.dayOfWeek === timeSlot.dayOfWeek
@@ -147,7 +149,7 @@ function TimeSlotCell({ timeSlot, lessons, onLessonRemove, readOnly, selectedWee
         <div
           className="h-full border-2 border-dashed border-surface-border rounded-lg flex items-center justify-center text-text-muted text-xs"
         >
-          Перетащите занятие сюда
+          {t('grid.dropHint')}
         </div>
       )}
     </div>
@@ -163,6 +165,7 @@ export function ScheduleGrid({
   onWeekTypeChange,
   readOnly = false,
 }: ScheduleGridProps) {
+  const { t } = useI18n();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -217,18 +220,18 @@ export function ScheduleGrid({
   return (
     <Card className="overflow-hidden">
       <div className="p-4 border-b border-surface-border flex flex-wrap items-center justify-between gap-4">
-        <h2 className="text-lg font-semibold text-text-primary">Недельное расписание</h2>
+        <h2 className="text-lg font-semibold text-text-primary">{t('schedule.title')}</h2>
         <div className="flex items-center gap-2">
-          <label className="text-sm text-text-secondary">Неделя:</label>
+          <label className="text-sm text-text-secondary">{t('grid.week')}:</label>
           <select
             value={selectedWeekType}
             onChange={e => onWeekTypeChange?.(e.target.value as 'all' | 'odd' | 'even')}
             className="px-3 py-1.5 text-sm border border-surface-border rounded-lg bg-surface-card text-text-primary focus:ring-2 focus:ring-brand-500"
             disabled={readOnly}
           >
-            <option value="all">Все недели</option>
-            <option value="odd">Нечётные</option>
-            <option value="even">Чётные</option>
+            <option value="all">{t('grid.allWeeks')}</option>
+            <option value="odd">{t('week.filter.odd')}</option>
+            <option value="even">{t('week.filter.even')}</option>
           </select>
         </div>
       </div>
@@ -243,15 +246,23 @@ export function ScheduleGrid({
             items={[...lessons.map(lesson => lesson.id), ...timeSlots.map(slot => slot.id)]}
             strategy={verticalListSortingStrategy}
           >
-            <div className="grid grid-cols-[80px_repeat(6,1fr)]">
+            <div
+              className="grid"
+              style={{
+                // A minimum column width keeps discipline and teacher names
+                // readable instead of truncating them; the container scrolls
+                // horizontally when the days do not fit.
+                gridTemplateColumns: `80px repeat(${DAYS.length}, minmax(150px, 1fr))`,
+              }}
+            >
               {/* Time column header */}
               <div className="col-span-1 p-2 text-center text-xs font-medium text-text-secondary bg-surface-muted border-b border-surface-border border-r border-surface-border">
-                Пара / Время
+                {t('grid.pairTime')}
               </div>
               {/* Day headers */}
               {DAYS.map((day, index) => (
                 <div key={index} className="p-2 text-center text-xs font-medium text-text-primary bg-surface-card border-b border-surface-border border-r border-surface-border">
-                  {day}
+                  {t(day as TranslationKey)}
                 </div>
               ))}
 
@@ -307,12 +318,14 @@ export function ScheduleGrid({
 
       {/* Legend */}
       <div className="p-4 border-t border-surface-border flex flex-wrap items-center gap-4 text-sm">
-        <span className="font-medium text-text-secondary">Типы занятий:</span>
+        <span className="font-medium text-text-secondary">{t('grid.lessonTypes')}</span>
         <div className="flex items-center gap-4">
           {Object.entries(TYPE_COLORS).map(([type, classes]) => (
             <div key={type} className="flex items-center gap-2">
               <span className={`w-3 h-3 rounded ${classes.replace('bg-', 'bg-').replace('text-', '').replace('border-', 'border-')}`}></span>
-              <span className="text-text-secondary capitalize">{type}</span>
+              <span className="text-text-secondary">
+                {t(`lessonType.${type}` as TranslationKey)}
+              </span>
             </div>
           ))}
         </div>

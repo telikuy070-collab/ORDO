@@ -1,6 +1,7 @@
 import { createRootRoute, Outlet, useNavigate } from '@tanstack/react-router';
 import { useEffect } from 'react';
 
+import { LanguageSwitcher, useI18n } from '@ordo/i18n';
 import { AppShell, Spinner } from '@ordo/ui';
 
 import { useSession } from '../auth/session';
@@ -13,6 +14,7 @@ const PUBLIC_ROUTES = new Set(['/login']);
 
 function RootComponent() {
   const { user, loading, logout } = useSession();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const path = typeof window !== 'undefined' ? window.location.pathname : '';
   const isPublic = PUBLIC_ROUTES.has(path);
@@ -35,22 +37,25 @@ function RootComponent() {
   return (
     <AppShell
       nav={[
-        { label: 'Расписание', href: '/schedule' },
-        { label: 'Сотрудники', href: '/users' },
-        { label: 'Группы', href: '/groups' },
-        { label: 'Импорт/Экспорт', href: '/import-export' },
+        { label: t('nav.schedule'), href: '/schedule' },
+        { label: t('nav.users'), href: '/users' },
+        { label: t('nav.teachers'), href: '/teachers' },
+        { label: t('nav.groups'), href: '/groups' },
+        { label: t('nav.importExport'), href: '/import-export' },
       ]}
       user={
         user
           ? {
               name: user.name || user.email,
               role: user.role,
+              logoutLabel: t('logout'),
               onLogout: () => {
                 void logout();
               },
             }
           : undefined
       }
+      headerExtra={<LanguageSwitcher />}
     >
       <Outlet />
     </AppShell>

@@ -13,6 +13,8 @@
       "@ordo/application/*": ["../../packages/application/src/*"],
       "@ordo/infrastructure": ["../../packages/infrastructure/src"],
       "@ordo/infrastructure/*": ["../../packages/infrastructure/src/*"],
+      "@ordo/i18n": ["../../packages/i18n/src"],
+      "@ordo/i18n/*": ["../../packages/i18n/src/*"],
       "@ordo/types": ["../../packages/types/src"],
       "@ordo/types/*": ["../../packages/types/src/*"],
       "@ordo/ui": ["../../packages/ui/src"],

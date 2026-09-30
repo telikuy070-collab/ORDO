@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ordo/domain": "workspace:*",
+    "@ordo/i18n": "workspace:*",
     "@ordo/infrastructure": "workspace:*",
     "@ordo/types": "workspace:*",
     "@ordo/ui": "workspace:*",

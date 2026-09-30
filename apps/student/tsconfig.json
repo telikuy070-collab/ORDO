@@ -25,6 +25,12 @@
       "@ordo/infrastructure/*": [
         "../../packages/infrastructure/src/*"
       ],
+      "@ordo/i18n": [
+        "../../packages/i18n/src"
+      ],
+      "@ordo/i18n/*": [
+        "../../packages/i18n/src/*"
+      ],
       "@ordo/types": [
         "../../packages/types/src"
       ],

@@ -3,6 +3,7 @@ import { createRouter, RouterProvider } from '@tanstack/react-router';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 
+import { I18nProvider } from '@ordo/i18n';
 import { ToastProvider } from '@ordo/ui';
 
 import { routeTree } from './routes';
@@ -22,9 +23,11 @@ const router = createRouter({ routeTree });
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <ToastProvider>
-        <RouterProvider router={router} />
-      </ToastProvider>
+      <I18nProvider>
+        <ToastProvider>
+          <RouterProvider router={router} />
+        </ToastProvider>
+      </I18nProvider>
     </QueryClientProvider>
   );
 }

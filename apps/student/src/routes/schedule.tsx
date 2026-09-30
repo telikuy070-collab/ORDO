@@ -1,6 +1,7 @@
 import { createRoute } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useI18n } from '@ordo/i18n';
 import {
   SupabasePublicScheduleRepository,
   type PublicLesson,
@@ -29,13 +30,6 @@ export const Route = createRoute({
 });
 
 const DEFAULT_TENANT_CODE = 'demo-kolledzh';
-
-const LESSON_TYPE_LABELS: Record<string, string> = {
-  lecture: 'Лекция',
-  practice: 'Практика',
-  seminar: 'Семинар',
-  lab: 'Лабораторная',
-};
 
 const LESSON_COLORS: Record<string, string> = {
   lecture: 'bg-blue-100 text-blue-800 border-blue-200',
@@ -83,6 +77,7 @@ function toTimeSlots(lessons: Lesson[]): TimeSlot[] {
 }
 
 function SchedulePage() {
+  const { t } = useI18n();
   const [tenantCode, setTenantCode] = useState(DEFAULT_TENANT_CODE);
   const [appliedCode, setAppliedCode] = useState(DEFAULT_TENANT_CODE);
   const [schedule, setSchedule] = useState<PublicSchedule | null>(null);
@@ -133,17 +128,17 @@ function SchedulePage() {
   return (
     <div>
       <PageHeader
-        title="Расписание"
+        title={t('schedule.title')}
         description={
           schedule
-            ? `${schedule.tenant.name} · ${LESSON_TYPE_LABELS['lecture'] ? `семестр ${schedule.semester?.number ?? '—'}` : ''}`
-            : 'Публичное учебное расписание'
+            ? `${schedule.tenant.name} · ${t('schedule.semester')} ${schedule.semester?.number ?? '—'}`
+            : t('schedule.subtitle')
         }
       />
 
       <Card className="mb-4">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 md:flex-row md:items-end">
-          <FormField label="Код колледжа" className="md:w-64">
+          <FormField label={t('student.tenantCode')} hint={t('student.tenantCode.hint')} className="md:w-64">
             <Input
               value={tenantCode}
               onChange={(e) => setTenantCode(e.target.value)}
@@ -151,30 +146,30 @@ function SchedulePage() {
             />
           </FormField>
 
-          <FormField label="Группа" className="md:w-48">
+          <FormField label={t('editor.group')} className="md:w-48">
             <Select
               value={groupCode}
               onChange={(e) => setGroupCode(e.target.value)}
               options={[
-                { value: 'all', label: 'Все группы' },
+                { value: 'all', label: t('common.all') },
                 ...groupCodes.map((code) => ({ value: code, label: code })),
               ]}
             />
           </FormField>
 
-          <FormField label="Неделя" className="md:w-40">
+          <FormField label={t('editor.week')} className="md:w-40">
             <Select
               value={week}
               onChange={(e) => setWeek(e.target.value as 'all' | 'odd' | 'even')}
               options={[
-                { value: 'all', label: 'Вся' },
-                { value: 'odd', label: 'Нечётная' },
-                { value: 'even', label: 'Чётная' },
+                { value: 'all', label: t('week.filter.all') },
+                { value: 'odd', label: t('week.filter.odd') },
+                { value: 'even', label: t('week.filter.even') },
               ]}
             />
           </FormField>
 
-          <Button type="submit">Показать</Button>
+          <Button type="submit">{t('common.show')}</Button>
         </form>
       </Card>
 
@@ -192,15 +187,15 @@ function SchedulePage() {
 
       {!loading && !error && !schedule && (
         <EmptyState
-          title="Расписание не найдено"
-          description="Колледж с таким кодом не найден или расписание ещё не опубликовано."
+          title={t('schedule.empty.title')}
+          description={t('schedule.empty.desc')}
         />
       )}
 
       {!loading && !error && schedule && visibleLessons.length === 0 && (
         <EmptyState
-          title="Нет занятий"
-          description="Для выбранной группы и недели занятий не найдено."
+          title={t('editor.empty.title')}
+          description={t('editor.empty.desc')}
         />
       )}
 
