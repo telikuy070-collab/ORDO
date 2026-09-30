@@ -51,3 +51,7 @@ supabase/functions/**/node_modules/
 # Misc
 *.tsbuildinfo
 .eslintcache
+
+# Local agent and editor state
+.kilo/
+.staging-admin-id
