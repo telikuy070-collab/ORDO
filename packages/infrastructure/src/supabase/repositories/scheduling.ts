@@ -47,11 +47,15 @@ export class SupabaseScheduleRepository extends SupabaseBaseRepository implement
   async create(data: Omit<Schedule, 'id' | 'createdAt' | 'publishedAt'>): Promise<Schedule> {
     const { data: result, error } = await this.client
       .from(this.tableName)
-      .insert(toSnakeCase({
-        ...data,
-        status: data.status ?? 'draft',
-        publishedAt: null,
-      }))
+      .insert(
+        await this.withTenantId(
+          toSnakeCase({
+            ...data,
+            status: data.status ?? 'draft',
+            publishedAt: null,
+          }),
+        ),
+      )
       .select()
       .single();
 
@@ -111,7 +115,7 @@ export class SupabaseScheduleVersionRepository extends SupabaseBaseRepository im
   async create(data: Omit<ScheduleVersion, 'id' | 'createdAt'>): Promise<ScheduleVersion> {
     const { data: result, error } = await this.client
       .from(this.tableName)
-      .insert(toSnakeCase(data))
+      .insert(await this.withTenantId(toSnakeCase(data)))
       .select()
       .single();
 
@@ -157,7 +161,7 @@ export class SupabaseLessonRepository extends SupabaseBaseRepository implements 
 
     const { data: result, error } = await this.client
       .from(this.tableName)
-      .insert(toSnakeCase(data))
+      .insert(await this.withTenantId(toSnakeCase(data)))
       .select()
       .single();
 

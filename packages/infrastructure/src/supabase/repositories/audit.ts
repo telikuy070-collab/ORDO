@@ -75,7 +75,7 @@ export class SupabaseAuditEventRepository extends SupabaseBaseRepository impleme
   async create(data: Omit<AuditEvent, 'id' | 'createdAt'>): Promise<AuditEvent> {
     const { data: result, error } = await this.client
       .from(this.tableName)
-      .insert(toSnakeCase(data))
+      .insert(await this.withTenantId(toSnakeCase(data)))
       .select()
       .single();
 
@@ -103,7 +103,7 @@ export class SupabaseChangeLogRepository extends SupabaseBaseRepository implemen
   async create(data: Omit<ChangeLog, 'id' | 'createdAt'>): Promise<ChangeLog> {
     const { data: result, error } = await this.client
       .from(this.tableName)
-      .insert(toSnakeCase(data))
+      .insert(await this.withTenantId(toSnakeCase(data)))
       .select()
       .single();
 

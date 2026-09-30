@@ -98,7 +98,7 @@ export class SupabasePublishedScheduleRepository extends SupabaseBaseRepository 
   async create(data: Omit<PublishedSchedule, 'id'>): Promise<PublishedSchedule> {
     const { data: result, error } = await this.client
       .from(this.tableName)
-      .insert(toSnakeCase(data))
+      .insert(await this.withTenantId(toSnakeCase(data)))
       .select()
       .single();
 
@@ -157,10 +157,10 @@ export class SupabaseNotificationRepository extends SupabaseBaseRepository imple
   async create(data: Omit<Notification, 'id' | 'createdAt'>): Promise<Notification> {
     const { data: result, error } = await this.client
       .from(this.tableName)
-      .insert(toSnakeCase({
+      .insert(await this.withTenantId(toSnakeCase({
         ...data,
         status: data.status ?? 'pending',
-      }))
+      })))
       .select()
       .single();
 
@@ -220,10 +220,10 @@ export class SupabaseSubscriptionRepository extends SupabaseBaseRepository imple
   async create(data: Omit<Subscription, 'id'>): Promise<Subscription> {
     const { data: result, error } = await this.client
       .from(this.tableName)
-      .insert(toSnakeCase({
+      .insert(await this.withTenantId(toSnakeCase({
         ...data,
         is_active: data.isActive ?? true,
-      }))
+      })))
       .select()
       .single();
 

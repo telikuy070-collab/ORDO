@@ -55,11 +55,11 @@ export class SupabaseImportJobRepository extends SupabaseBaseRepository implemen
   async create(data: Omit<ImportJob, 'id' | 'createdAt'>): Promise<ImportJob> {
     const { data: result, error } = await this.client
       .from(this.tableName)
-      .insert(toSnakeCase({
+      .insert(await this.withTenantId(toSnakeCase({
         ...data,
         status: data.status ?? 'pending',
         processed_rows: data.processedRows ?? 0,
-      }))
+      })))
       .select()
       .single();
 
@@ -119,11 +119,11 @@ export class SupabaseExportJobRepository extends SupabaseBaseRepository implemen
   async create(data: Omit<ExportJob, 'id' | 'createdAt'>): Promise<ExportJob> {
     const { data: result, error } = await this.client
       .from(this.tableName)
-      .insert(toSnakeCase({
+      .insert(await this.withTenantId(toSnakeCase({
         ...data,
         status: data.status ?? 'pending',
         filter: data.filter ?? {},
-      }))
+      })))
       .select()
       .single();
 
@@ -191,7 +191,7 @@ export class SupabaseMappingRepository extends SupabaseBaseRepository implements
 
     const { data: result, error } = await this.client
       .from(this.tableName)
-      .insert(toSnakeCase(data))
+      .insert(await this.withTenantId(toSnakeCase(data)))
       .select()
       .single();
 

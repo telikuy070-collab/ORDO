@@ -57,6 +57,27 @@ export class SupabaseBaseRepository {
     return tenantIds.size === 1 ? [...tenantIds][0]! : null;
   }
 
+  /**
+   * Adds the active tenant to an insert payload.
+   *
+   * Since tenant_id is NOT NULL on every tenant-scoped table, inserts have to
+   * carry it. It is resolved from the caller's session rather than accepted from
+   * the caller, so a request cannot choose which tenant it writes into; RLS
+   * would reject a foreign tenant anyway, but failing at the source keeps the
+   * error meaningful.
+   */
+  protected async withTenantId<T extends Record<string, unknown>>(
+    payload: T,
+  ): Promise<T & Record<string, unknown>> {
+    const tenantId = await this.getCurrentTenantId();
+    if (!tenantId) {
+      throw new Error(
+        'Cannot write without an active tenant. The session must belong to exactly one tenant.',
+      );
+    }
+    return { ...payload, [this.tenantIdColumn]: tenantId };
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   protected async applyTenantFilter(query: any, tenantId?: string): Promise<any> {
     const targetTenantId = tenantId ?? (await this.getCurrentTenantId());

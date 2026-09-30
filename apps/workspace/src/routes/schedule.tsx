@@ -1,4 +1,4 @@
-import { createRoute } from '@tanstack/react-router';
+import { createRoute, Link } from '@tanstack/react-router';
 import { useCallback, useEffect, useState } from 'react';
 
 import { UserRole } from '@ordo/domain';
@@ -210,20 +210,29 @@ function SchedulePage() {
                       : '—'}
                   </td>
                   <td className="py-2 text-right">
-                    {canPublish ? (
-                      <Button
-                        size="sm"
-                        loading={pending === row.id}
-                        disabled={row.versionCount === 0}
-                        onClick={() => handlePublish(row.id)}
+                    <div className="flex items-center justify-end gap-2">
+                      <Link
+                        to="/schedule/$scheduleId"
+                        params={{ scheduleId: row.id }}
+                        className="text-sm text-brand-600 hover:underline"
                       >
-                        Опубликовать
-                      </Button>
-                    ) : (
-                      <span className="text-xs text-text-muted">
-                        нужно право владельца расписания
-                      </span>
-                    )}
+                        Открыть
+                      </Link>
+                      {canPublish ? (
+                        <Button
+                          size="sm"
+                          loading={pending === row.id}
+                          disabled={row.versionCount === 0}
+                          onClick={() => handlePublish(row.id)}
+                        >
+                          Опубликовать
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-text-muted">
+                          нужно право владельца расписания
+                        </span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

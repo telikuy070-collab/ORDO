@@ -55,10 +55,10 @@ export class SupabaseTeacherRepository extends SupabaseBaseRepository implements
   async create(data: Omit<Teacher, 'id'>): Promise<Teacher> {
     const { data: result, error } = await this.client
       .from(this.tableName)
-      .insert(toSnakeCase({
+      .insert(await this.withTenantId(toSnakeCase({
         ...data,
         isActive: data.isActive ?? true,
-      }))
+      })))
       .select()
       .single();
 
@@ -193,7 +193,7 @@ export class SupabaseRoomRepository extends SupabaseBaseRepository implements IR
 
     const { data: result, error } = await this.client
       .from(this.tableName)
-      .insert(toSnakeCase(data))
+      .insert(await this.withTenantId(toSnakeCase(data)))
       .select()
       .single();
 
@@ -253,7 +253,7 @@ export class SupabaseBuildingRepository extends SupabaseBaseRepository implement
   async create(data: Omit<Building, 'id'>): Promise<Building> {
     const { data: result, error } = await this.client
       .from(this.tableName)
-      .insert(toSnakeCase(data))
+      .insert(await this.withTenantId(toSnakeCase(data)))
       .select()
       .single();
 
@@ -332,11 +332,11 @@ export class SupabasePreferenceRepository extends SupabaseBaseRepository impleme
 
     const { data: result, error } = await this.client
       .from(this.tableName)
-      .insert(toSnakeCase({
+      .insert(await this.withTenantId(toSnakeCase({
         ...data,
         status: data.status ?? 'pending',
         comment: data.comment ?? '',
-      }))
+      })))
       .select()
       .single();
 

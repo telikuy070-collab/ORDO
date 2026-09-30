@@ -47,7 +47,7 @@ export class SupabaseSpecialtyRepository extends SupabaseBaseRepository implemen
   async create(data: Omit<Specialty, 'id'>): Promise<Specialty> {
     const { data: result, error } = await this.client
       .from(this.tableName)
-      .insert(toSnakeCase(data))
+      .insert(await this.withTenantId(toSnakeCase(data)))
       .select()
       .single();
 
@@ -131,7 +131,7 @@ export class SupabaseGroupRepository extends SupabaseBaseRepository implements I
 
     const { data: result, error } = await this.client
       .from(this.tableName)
-      .insert(toSnakeCase(data))
+      .insert(await this.withTenantId(toSnakeCase(data)))
       .select()
       .single();
 
@@ -207,7 +207,7 @@ export class SupabaseSemesterRepository extends SupabaseBaseRepository implement
 
     const { data: result, error } = await this.client
       .from(this.tableName)
-      .insert(toSnakeCase(data))
+      .insert(await this.withTenantId(toSnakeCase(data)))
       .select()
       .single();
 
@@ -267,7 +267,7 @@ export class SupabaseDisciplineRepository extends SupabaseBaseRepository impleme
   async create(data: Omit<Discipline, 'id'>): Promise<Discipline> {
     const { data: result, error } = await this.client
       .from(this.tableName)
-      .insert(toSnakeCase(data))
+      .insert(await this.withTenantId(toSnakeCase(data)))
       .select()
       .single();
 
@@ -349,7 +349,7 @@ export class SupabaseCurriculumRepository extends SupabaseBaseRepository impleme
 
     const { data: result, error } = await this.client
       .from(this.tableName)
-      .insert(toSnakeCase(data))
+      .insert(await this.withTenantId(toSnakeCase(data)))
       .select()
       .single();
 

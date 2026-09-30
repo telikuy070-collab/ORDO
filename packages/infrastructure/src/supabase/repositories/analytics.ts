@@ -49,7 +49,7 @@ export class SupabaseWorkloadReportRepository extends SupabaseBaseRepository imp
   async create(data: Omit<WorkloadReport, 'id' | 'generatedAt'>): Promise<WorkloadReport> {
     const { data: result, error } = await this.client
       .from(this.tableName)
-      .insert(toSnakeCase(data))
+      .insert(await this.withTenantId(toSnakeCase(data)))
       .select()
       .single();
 
@@ -124,7 +124,7 @@ export class SupabaseTeacherLoadRepository extends SupabaseBaseRepository implem
 
     const { data: result, error } = await this.client
       .from(this.tableName)
-      .insert(toSnakeCase(data))
+      .insert(await this.withTenantId(toSnakeCase(data)))
       .select()
       .single();
 
@@ -187,7 +187,7 @@ export class SupabaseGroupLoadRepository extends SupabaseBaseRepository implemen
 
     const { data: result, error } = await this.client
       .from(this.tableName)
-      .insert(toSnakeCase(data))
+      .insert(await this.withTenantId(toSnakeCase(data)))
       .select()
       .single();
 
