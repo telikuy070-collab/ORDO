@@ -7,15 +7,46 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "paths": {
-      "@ordo/domain": ["../../packages/domain/src"],
-      "@ordo/domain/*": ["../../packages/domain/src/*"],
-      "@ordo/types": ["../../packages/types/src"],
-      "@ordo/types/*": ["../../packages/types/src/*"],
-      "@ordo/ui": ["../../packages/ui/src"],
-      "@ordo/ui/*": ["../../packages/ui/src/*"],
-      "@ordo/config": ["../../packages/config"]
+      "@ordo/domain": [
+        "../../packages/domain/src"
+      ],
+      "@ordo/domain/*": [
+        "../../packages/domain/src/*"
+      ],
+      "@ordo/application": [
+        "../../packages/application/src"
+      ],
+      "@ordo/application/*": [
+        "../../packages/application/src/*"
+      ],
+      "@ordo/infrastructure": [
+        "../../packages/infrastructure/src"
+      ],
+      "@ordo/infrastructure/*": [
+        "../../packages/infrastructure/src/*"
+      ],
+      "@ordo/types": [
+        "../../packages/types/src"
+      ],
+      "@ordo/types/*": [
+        "../../packages/types/src/*"
+      ],
+      "@ordo/ui": [
+        "../../packages/ui/src"
+      ],
+      "@ordo/ui/*": [
+        "../../packages/ui/src/*"
+      ],
+      "@ordo/config": [
+        "../../packages/config"
+      ]
     }
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

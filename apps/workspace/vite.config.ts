@@ -1,8 +1,17 @@
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import react from '@vitejs/plugin-react';
 import autoprefixer from 'autoprefixer';
 import tailwindcss from 'tailwindcss';
 import { defineConfig } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+
+// Resolved from this file rather than the process working directory: a relative
+// alias silently breaks depending on where Vite was launched from, which made
+// `vite dev` fail to resolve @ordo/* while `vite build` worked.
+const here = fileURLToPath(new URL('.', import.meta.url));
+const pkg = (...parts: string[]) => resolve(here, '../../packages', ...parts);
 
 export default defineConfig({
   root: '.',
@@ -36,16 +45,16 @@ export default defineConfig({
     // `@ordo/domain/scheduling`, which would resolve to `index.ts/scheduling`.
     // Subpaths are directory modules, so they map to `<module>/index.ts`.
     alias: [
-      { find: /^@ordo\/domain$/, replacement: '../../packages/domain/src/index.ts' },
-      { find: /^@ordo\/domain\/(.+)$/, replacement: '../../packages/domain/src/$1/index.ts' },
-      { find: /^@ordo\/application$/, replacement: '../../packages/application/src/index.ts' },
-      { find: /^@ordo\/application\/(.+)$/, replacement: '../../packages/application/src/$1/index.ts' },
-      { find: /^@ordo\/infrastructure$/, replacement: '../../packages/infrastructure/src/index.ts' },
-      { find: /^@ordo\/infrastructure\/(.+)$/, replacement: '../../packages/infrastructure/src/$1/index.ts' },
-      { find: /^@ordo\/types$/, replacement: '../../packages/types/src/index.ts' },
-      { find: /^@ordo\/types\/(.+)$/, replacement: '../../packages/types/src/$1/index.ts' },
-      { find: /^@ordo\/ui$/, replacement: '../../packages/ui/src/index.ts' },
-      { find: /^@ordo\/ui\/(.+)$/, replacement: '../../packages/ui/src/$1/index.ts' },
+      { find: /^@ordo\/domain$/, replacement: pkg('domain/src/index.ts') },
+      { find: /^@ordo\/domain\/(.+)$/, replacement: pkg('domain/src/$1/index.ts') },
+      { find: /^@ordo\/application$/, replacement: pkg('application/src/index.ts') },
+      { find: /^@ordo\/application\/(.+)$/, replacement: pkg('application/src/$1/index.ts') },
+      { find: /^@ordo\/infrastructure$/, replacement: pkg('infrastructure/src/index.ts') },
+      { find: /^@ordo\/infrastructure\/(.+)$/, replacement: pkg('infrastructure/src/$1/index.ts') },
+      { find: /^@ordo\/types$/, replacement: pkg('types/src/index.ts') },
+      { find: /^@ordo\/types\/(.+)$/, replacement: pkg('types/src/$1/index.ts') },
+      { find: /^@ordo\/ui$/, replacement: pkg('ui/src/index.ts') },
+      { find: /^@ordo\/ui\/(.+)$/, replacement: pkg('ui/src/$1/index.ts') },
     ],
   },
   css: {

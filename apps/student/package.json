@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@ordo/domain": "workspace:*",
+    "@ordo/infrastructure": "workspace:*",
     "@ordo/types": "workspace:*",
     "@ordo/ui": "workspace:*",
     "@tanstack/react-query": "^5.62.0",

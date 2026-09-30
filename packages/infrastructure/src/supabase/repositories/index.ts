@@ -1,6 +1,7 @@
 // Supabase repositories barrel export
 
 export * from './identity';
+export * from './publicSchedule';
 export * from './academic';
 export * from './resources';
 export * from './scheduling';

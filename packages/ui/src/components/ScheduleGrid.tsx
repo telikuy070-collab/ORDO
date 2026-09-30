@@ -45,8 +45,8 @@ export interface Lesson {
 export interface ScheduleGridProps {
   timeSlots: TimeSlot[];
   lessons: Lesson[];
-  onLessonDrop: (lessonId: string, timeSlotId: string) => void;
-  onLessonRemove: (timeSlotId: string) => void;
+  onLessonDrop?: (lessonId: string, timeSlotId: string) => void;
+  onLessonRemove?: (timeSlotId: string) => void;
   selectedWeekType?: 'all' | 'odd' | 'even';
   onWeekTypeChange?: (type: 'all' | 'odd' | 'even') => void;
   readOnly?: boolean;
@@ -118,7 +118,7 @@ function SortableLesson({ lesson, onRemove, disabled }: { lesson: Lesson; onRemo
 function TimeSlotCell({ timeSlot, lessons, onLessonRemove, readOnly, selectedWeekType }: {
   timeSlot: TimeSlot;
   lessons: Lesson[];
-  onLessonRemove: (timeSlotId: string) => void;
+  onLessonRemove?: (timeSlotId: string) => void;
   readOnly?: boolean;
   selectedWeekType: 'all' | 'odd' | 'even';
 }) {
@@ -139,7 +139,7 @@ function TimeSlotCell({ timeSlot, lessons, onLessonRemove, readOnly, selectedWee
         <SortableLesson
           key={lesson.id}
           lesson={lesson}
-          onRemove={() => onLessonRemove(timeSlot.id)}
+          onRemove={() => onLessonRemove?.(timeSlot.id)}
           disabled={readOnly}
         />
       ))}
@@ -194,7 +194,7 @@ export function ScheduleGrid({
         : undefined;
 
     if (targetSlotId) {
-      onLessonDrop(activeId, targetSlotId);
+      onLessonDrop?.(activeId, targetSlotId);
     }
   }, [filteredSlots, lessons, onLessonDrop, selectedWeekType]);
 
@@ -256,11 +256,25 @@ export function ScheduleGrid({
               ))}
 
               {/* Grid rows */}
-              {PAIRS.map(pair => (
+              {PAIRS.map(pair => {
+                // Prefer the times carried by the lessons themselves: the
+                // hardcoded defaults are only a fallback for empty pairs, and
+                // showing them unconditionally can contradict the timetable.
+                const times = new Set(
+                  lessons
+                    .filter(lesson => lesson.pairNumber === pair.number)
+                    .map(lesson => `${lesson.timeStart.slice(0, 5)}–${lesson.timeEnd.slice(0, 5)}`),
+                );
+                const label =
+                  times.size === 1
+                    ? [...times][0]
+                    : pair.time;
+
+                return (
                 <React.Fragment key={pair.number}>
                   {/* Time label */}
                   <div className="p-2 text-center text-xs text-text-secondary bg-surface-muted border-r border-surface-border border-b border-surface-border flex items-center justify-center">
-                    <span className="font-mono">{pair.time}</span>
+                    <span className="font-mono">{label}</span>
                   </div>
                   {/* Time slots for each day */}
                   {DAYS.map((_, dayIndex) => {
@@ -284,7 +298,8 @@ export function ScheduleGrid({
                     );
                   })}
                 </React.Fragment>
-              ))}
+                );
+              })}
             </div>
           </SortableContext>
         </DndContext>
