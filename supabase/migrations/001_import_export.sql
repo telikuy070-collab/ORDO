@@ -2,20 +2,30 @@
 -- Import/export module: jobs, mappings, and RLS policies.
 -- Every table carries tenant_id (multitenancy) and RLS (AGENTS.md §5).
 
-create extension if not exists "uuid-ossp";
-
 -- Tenants (referenced by every tenant-scoped table).
 create table if not exists public.tenants (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   name text not null,
   code text unique,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
+-- Field mappings (source field -> target field) for import jobs.
+create table if not exists public.mappings (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references public.tenants(id) on delete cascade,
+  name text not null,
+  fields jsonb not null default '[]',
+  created_by uuid,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (tenant_id, name)
+);
+
 -- Import jobs (schedule import from Excel/CSV).
 create table if not exists public.import_jobs (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references public.tenants(id) on delete cascade,
   file_name text not null,
   file_size integer,
@@ -24,14 +34,14 @@ create table if not exists public.import_jobs (
   total_rows integer,
   processed_rows integer default 0,
   mapping_id uuid references public.mappings(id) on delete set null,
-  created_by uuid references public.auth.users(id) on delete set null,
+  created_by uuid,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 -- Export jobs (schedule export to Excel/CSV/JSON).
 create table if not exists public.export_jobs (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   tenant_id uuid not null references public.tenants(id) on delete cascade,
   format text not null check (format in ('xlsx', 'csv', 'json')),
   status text not null default 'pending' check (status in ('pending', 'processing', 'completed', 'failed')),
@@ -39,21 +49,9 @@ create table if not exists public.export_jobs (
   filter jsonb default '{}',
   file_path text,
   file_size integer,
-  created_by uuid references public.auth.users(id) on delete set null,
+  created_by uuid,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
-);
-
--- Field mappings (source field -> target field) for import jobs.
-create table if not exists public.mappings (
-  id uuid primary key default uuid_generate_v4(),
-  tenant_id uuid not null references public.tenants(id) on delete cascade,
-  name text not null,
-  fields jsonb not null default '[]',
-  created_by uuid references public.auth.users(id) on delete set null,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  unique (tenant_id, name)
 );
 
 -- Indexes on tenant_id and foreign keys (AGENTS.md §5).
@@ -82,6 +80,16 @@ begin
 end;
 $$;
 
+-- Helper: returns the tenant_id for the current authenticated user.
+-- Set by the application (e.g. via a custom JWT claim or a user_settings table).
+create or replace function public.current_tenant_id()
+returns uuid
+language sql
+stable
+as $$
+  select null::uuid
+$$;
+
 -- RLS: every table is tenant-scoped and authenticated users can only see their tenant.
 alter table public.import_jobs enable row level security;
 alter table public.export_jobs enable row level security;
@@ -106,13 +114,3 @@ create policy "mappings_tenant_isolation" on public.mappings
 create policy "tenants_self_isolation" on public.tenants
   for select
   using (id = public.current_tenant_id());
-
--- Helper: returns the tenant_id for the current authenticated user.
--- Set by the application (e.g. via a custom JWT claim or a user_settings table).
-create or replace function public.current_tenant_id()
-returns uuid
-language sql
-stable
-as $$
-  select null::uuid
-$$;
