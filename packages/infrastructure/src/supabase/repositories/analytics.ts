@@ -4,105 +4,194 @@ import type {
   IWorkloadReportRepository,
 } from '@ordo/application';
 import { type GroupLoad, type TeacherLoad, type WorkloadReport } from '@ordo/domain/analytics';
+import { SupabaseBaseRepository, toCamelCase, toSnakeCase } from './base';
 
-export class SupabaseWorkloadReportRepository implements IWorkloadReportRepository {
-  private readonly reports = new Map<string, WorkloadReport>();
+export class SupabaseWorkloadReportRepository extends SupabaseBaseRepository implements IWorkloadReportRepository {
+  constructor() {
+    super({ tableName: 'workload_reports', tenantIdColumn: 'tenant_id' });
+  }
 
   async findById(id: string): Promise<WorkloadReport | null> {
-    return this.reports.get(id) ?? null;
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    this.handleError(error, 'findById');
+    return data ? toCamelCase(data) as WorkloadReport : null;
   }
 
   async findByTeacher(teacherId: string, semesterId: string): Promise<WorkloadReport | null> {
-    return (
-      [...this.reports.values()].find(
-        (report) => report.teacherId === teacherId && report.semesterId === semesterId,
-      ) ?? null
-    );
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('teacher_id', teacherId)
+      .eq('semester_id', semesterId)
+      .single();
+
+    this.handleError(error, 'findByTeacher');
+    return data ? toCamelCase(data) as WorkloadReport : null;
   }
 
   async findByTenant(tenantId: string, semesterId: string): Promise<WorkloadReport[]> {
-    return [...this.reports.values()].filter(
-      (report) => report.tenantId === tenantId && report.semesterId === semesterId,
-    );
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('semester_id', semesterId)
+      .order('teacher_id', { ascending: true });
+
+    this.handleError(error, 'findByTenant');
+    return (data ?? []).map(toCamelCase) as WorkloadReport[];
   }
 
   async create(data: Omit<WorkloadReport, 'id' | 'generatedAt'>): Promise<WorkloadReport> {
-    const report: WorkloadReport = {
-      ...data,
-      id: crypto.randomUUID(),
-      generatedAt: new Date(),
-    };
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .insert(toSnakeCase(data))
+      .select()
+      .single();
 
-    this.reports.set(report.id, report);
-    return report;
+    this.handleError(error, 'create');
+    return toCamelCase(result) as WorkloadReport;
   }
 
   async update(id: string, data: Partial<WorkloadReport>): Promise<WorkloadReport> {
-    const current = this.reports.get(id);
-    if (!current) {
-      throw new Error(`Report not found: ${id}`);
-    }
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .update(toSnakeCase(data))
+      .eq('id', id)
+      .select()
+      .single();
 
-    const next: WorkloadReport = { ...current, ...data };
-    this.reports.set(id, next);
-    return next;
+    this.handleError(error, 'update');
+    return toCamelCase(result) as WorkloadReport;
   }
 }
 
-export class SupabaseTeacherLoadRepository implements ITeacherLoadRepository {
-  private readonly loads = new Map<string, TeacherLoad>();
+export class SupabaseTeacherLoadRepository extends SupabaseBaseRepository implements ITeacherLoadRepository {
+  constructor() {
+    super({ tableName: 'teacher_loads', tenantIdColumn: 'tenant_id' });
+  }
 
   async findByTeacherAndSemester(teacherId: string, semesterId: string): Promise<TeacherLoad[]> {
-    return [...this.loads.values()].filter(
-      (load) => load.teacherId === teacherId && load.weekLoad.length > 0 && semesterId.length > 0,
-    );
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('teacher_id', teacherId)
+      .eq('semester_id', semesterId)
+      .order('discipline_id', { ascending: true });
+
+    this.handleError(error, 'findByTeacherAndSemester');
+    return (data ?? []).map(toCamelCase) as TeacherLoad[];
   }
 
   async findByTenantAndSemester(tenantId: string, semesterId: string): Promise<TeacherLoad[]> {
-    void tenantId;
-    void semesterId;
-    return [...this.loads.values()];
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('semester_id', semesterId)
+      .order('teacher_id', { ascending: true })
+      .order('discipline_id', { ascending: true });
+
+    this.handleError(error, 'findByTenantAndSemester');
+    return (data ?? []).map(toCamelCase) as TeacherLoad[];
   }
 
   async upsert(data: Omit<TeacherLoad, 'id'>): Promise<TeacherLoad> {
-    const key = `${data.teacherId}:${data.disciplineId}`;
-    const current = this.loads.get(key);
-    const next: TeacherLoad = {
-      ...current,
-      ...data,
-      id: current?.id ?? crypto.randomUUID(),
-    };
+    const { data: existing, error: findError } = await this.client
+      .from(this.tableName)
+      .select('id')
+      .eq('teacher_id', data.teacherId)
+      .eq('discipline_id', data.disciplineId)
+      .single();
 
-    this.loads.set(key, next);
-    return next;
+    this.handleError(findError, 'upsert - find');
+
+    if (existing) {
+      const { data: result, error } = await this.client
+        .from(this.tableName)
+        .update(toSnakeCase(data))
+        .eq('id', existing.id)
+        .select()
+        .single();
+
+      this.handleError(error, 'upsert - update');
+      return toCamelCase(result) as TeacherLoad;
+    }
+
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .insert(toSnakeCase(data))
+      .select()
+      .single();
+
+    this.handleError(error, 'upsert - insert');
+    return toCamelCase(result) as TeacherLoad;
   }
 }
 
-export class SupabaseGroupLoadRepository implements IGroupLoadRepository {
-  private readonly loads = new Map<string, GroupLoad>();
+export class SupabaseGroupLoadRepository extends SupabaseBaseRepository implements IGroupLoadRepository {
+  constructor() {
+    super({ tableName: 'group_loads', tenantIdColumn: 'tenant_id' });
+  }
 
   async findByGroupAndSemester(groupId: string, semesterId: string): Promise<GroupLoad[]> {
-    return [...this.loads.values()].filter(
-      (load) => load.groupId === groupId && load.weekLoad.length > 0 && semesterId.length > 0,
-    );
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('group_id', groupId)
+      .eq('semester_id', semesterId)
+      .order('discipline_id', { ascending: true });
+
+    this.handleError(error, 'findByGroupAndSemester');
+    return (data ?? []).map(toCamelCase) as GroupLoad[];
   }
 
   async findByTenantAndSemester(tenantId: string, semesterId: string): Promise<GroupLoad[]> {
-    void tenantId;
-    void semesterId;
-    return [...this.loads.values()];
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('semester_id', semesterId)
+      .order('group_id', { ascending: true })
+      .order('discipline_id', { ascending: true });
+
+    this.handleError(error, 'findByTenantAndSemester');
+    return (data ?? []).map(toCamelCase) as GroupLoad[];
   }
 
   async upsert(data: Omit<GroupLoad, 'id'>): Promise<GroupLoad> {
-    const key = `${data.groupId}:${data.disciplineId}`;
-    const current = this.loads.get(key);
-    const next: GroupLoad = {
-      ...current,
-      ...data,
-      id: current?.id ?? crypto.randomUUID(),
-    };
+    const { data: existing, error: findError } = await this.client
+      .from(this.tableName)
+      .select('id')
+      .eq('group_id', data.groupId)
+      .eq('discipline_id', data.disciplineId)
+      .single();
 
-    this.loads.set(key, next);
-    return next;
+    this.handleError(findError, 'upsert - find');
+
+    if (existing) {
+      const { data: result, error } = await this.client
+        .from(this.tableName)
+        .update(toSnakeCase(data))
+        .eq('id', existing.id)
+        .select()
+        .single();
+
+      this.handleError(error, 'upsert - update');
+      return toCamelCase(result) as GroupLoad;
+    }
+
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .insert(toSnakeCase(data))
+      .select()
+      .single();
+
+    this.handleError(error, 'upsert - insert');
+    return toCamelCase(result) as GroupLoad;
   }
 }

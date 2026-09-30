@@ -1,72 +1,114 @@
 import type { IAuditEventRepository, IChangeLogRepository } from '@ordo/application';
 import { AuditEventImmutableError, type AuditEvent, type ChangeLog } from '@ordo/domain/audit';
 import type { PaginatedResponse } from '@ordo/types';
+import { SupabaseBaseRepository, toCamelCase, toSnakeCase } from './base';
 
-export class SupabaseAuditEventRepository implements IAuditEventRepository {
-  private readonly events = new Map<string, AuditEvent>();
+export class SupabaseAuditEventRepository extends SupabaseBaseRepository implements IAuditEventRepository {
+  constructor() {
+    super({ tableName: 'audit_events', tenantIdColumn: 'tenant_id' });
+  }
 
   async findById(id: string): Promise<AuditEvent | null> {
-    return this.events.get(id) ?? null;
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    this.handleError(error, 'findById');
+    return data ? toCamelCase(data) as AuditEvent : null;
   }
 
   async findByTenant(tenantId: string, page: number, pageSize: number): Promise<PaginatedResponse<AuditEvent>> {
-    const data = [...this.events.values()].filter((event) => event.tenantId === tenantId);
-    const start = (page - 1) * pageSize;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
 
+    const { data, error, count } = await this.client
+      .from(this.tableName)
+      .select('*', { count: 'exact' })
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    this.handleError(error, 'findByTenant');
     return {
-      data: data.slice(start, start + pageSize),
-      total: data.length,
+      data: (data ?? []).map(toCamelCase) as AuditEvent[],
+      total: count ?? 0,
       page,
       pageSize,
     };
   }
 
   async findByEntity(tenantId: string, entity: string, entityId: string): Promise<AuditEvent[]> {
-    return [...this.events.values()].filter(
-      (event) => event.tenantId === tenantId && event.entity === entity && event.entityId === entityId,
-    );
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('entity', entity)
+      .eq('entity_id', entityId)
+      .order('created_at', { ascending: false });
+
+    this.handleError(error, 'findByEntity');
+    return (data ?? []).map(toCamelCase) as AuditEvent[];
   }
 
   async findByUser(userId: string, page: number, pageSize: number): Promise<PaginatedResponse<AuditEvent>> {
-    const data = [...this.events.values()].filter((event) => event.userId === userId);
-    const start = (page - 1) * pageSize;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
 
+    const { data, error, count } = await this.client
+      .from(this.tableName)
+      .select('*', { count: 'exact' })
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    this.handleError(error, 'findByUser');
     return {
-      data: data.slice(start, start + pageSize),
-      total: data.length,
+      data: (data ?? []).map(toCamelCase) as AuditEvent[],
+      total: count ?? 0,
       page,
       pageSize,
     };
   }
 
   async create(data: Omit<AuditEvent, 'id' | 'createdAt'>): Promise<AuditEvent> {
-    const event: AuditEvent = {
-      ...data,
-      id: crypto.randomUUID(),
-      createdAt: new Date(),
-    };
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .insert(toSnakeCase(data))
+      .select()
+      .single();
 
-    this.events.set(event.id, event);
-    return event;
+    this.handleError(error, 'create');
+    return toCamelCase(result) as AuditEvent;
   }
 }
 
-export class SupabaseChangeLogRepository implements IChangeLogRepository {
-  private readonly changeLogs = new Map<string, ChangeLog>();
+export class SupabaseChangeLogRepository extends SupabaseBaseRepository implements IChangeLogRepository {
+  constructor() {
+    super({ tableName: 'change_logs', tenantIdColumn: 'tenant_id' });
+  }
 
   async findByVersion(versionId: string): Promise<ChangeLog | null> {
-    return this.changeLogs.get(versionId) ?? null;
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('version_id', versionId)
+      .single();
+
+    this.handleError(error, 'findByVersion');
+    return data ? toCamelCase(data) as ChangeLog : null;
   }
 
   async create(data: Omit<ChangeLog, 'id' | 'createdAt'>): Promise<ChangeLog> {
-    const log: ChangeLog = {
-      ...data,
-      id: crypto.randomUUID(),
-      createdAt: new Date(),
-    };
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .insert(toSnakeCase(data))
+      .select()
+      .single();
 
-    this.changeLogs.set(log.versionId, log);
-    return log;
+    this.handleError(error, 'create');
+    return toCamelCase(result) as ChangeLog;
   }
 }
 

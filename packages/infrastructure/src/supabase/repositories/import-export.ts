@@ -14,108 +14,173 @@ import {
 } from '@ordo/domain/import-export';
 import { ExcelGenerator, ExcelParser } from '@ordo/infrastructure';
 import type { PaginatedResponse } from '@ordo/types';
+import { SupabaseBaseRepository, toCamelCase, toSnakeCase } from './base';
 
-export class SupabaseImportJobRepository implements IImportJobRepository {
-  private readonly jobs = new Map<string, ImportJob>();
+export class SupabaseImportJobRepository extends SupabaseBaseRepository implements IImportJobRepository {
+  constructor() {
+    super({ tableName: 'import_jobs', tenantIdColumn: 'tenant_id' });
+  }
 
   async findById(id: string): Promise<ImportJob | null> {
-    return this.jobs.get(id) ?? null;
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    this.handleError(error, 'findById');
+    return data ? toCamelCase(data) as ImportJob : null;
   }
 
   async findByTenant(tenantId: string, page: number, pageSize: number): Promise<PaginatedResponse<ImportJob>> {
-    const data = [...this.jobs.values()].filter((job) => job.tenantId === tenantId);
-    const start = (page - 1) * pageSize;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
 
+    const { data, error, count } = await this.client
+      .from(this.tableName)
+      .select('*', { count: 'exact' })
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    this.handleError(error, 'findByTenant');
     return {
-      data: data.slice(start, start + pageSize),
-      total: data.length,
+      data: (data ?? []).map(toCamelCase) as ImportJob[],
+      total: count ?? 0,
       page,
       pageSize,
     };
   }
 
   async create(data: Omit<ImportJob, 'id' | 'createdAt'>): Promise<ImportJob> {
-    const job: ImportJob = {
-      ...data,
-      id: crypto.randomUUID(),
-      createdAt: new Date(),
-    };
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .insert(toSnakeCase({
+        ...data,
+        status: data.status ?? 'pending',
+        processed_rows: data.processedRows ?? 0,
+      }))
+      .select()
+      .single();
 
-    this.jobs.set(job.id, job);
-    return job;
+    this.handleError(error, 'create');
+    return toCamelCase(result) as ImportJob;
   }
 
   async update(id: string, data: Partial<ImportJob>): Promise<ImportJob> {
-    const current = this.jobs.get(id);
-    if (!current) {
-      throw new Error(`Import job not found: ${id}`);
-    }
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .update(toSnakeCase(data))
+      .eq('id', id)
+      .select()
+      .single();
 
-    const next: ImportJob = { ...current, ...data };
-    this.jobs.set(id, next);
-    return next;
+    this.handleError(error, 'update');
+    return toCamelCase(result) as ImportJob;
   }
 }
 
-export class SupabaseExportJobRepository implements IExportJobRepository {
-  private readonly jobs = new Map<string, ExportJob>();
+export class SupabaseExportJobRepository extends SupabaseBaseRepository implements IExportJobRepository {
+  constructor() {
+    super({ tableName: 'export_jobs', tenantIdColumn: 'tenant_id' });
+  }
 
   async findById(id: string): Promise<ExportJob | null> {
-    return this.jobs.get(id) ?? null;
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    this.handleError(error, 'findById');
+    return data ? toCamelCase(data) as ExportJob : null;
   }
 
   async findByTenant(tenantId: string, page: number, pageSize: number): Promise<PaginatedResponse<ExportJob>> {
-    const data = [...this.jobs.values()].filter((job) => job.tenantId === tenantId);
-    const start = (page - 1) * pageSize;
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
 
+    const { data, error, count } = await this.client
+      .from(this.tableName)
+      .select('*', { count: 'exact' })
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false })
+      .range(from, to);
+
+    this.handleError(error, 'findByTenant');
     return {
-      data: data.slice(start, start + pageSize),
-      total: data.length,
+      data: (data ?? []).map(toCamelCase) as ExportJob[],
+      total: count ?? 0,
       page,
       pageSize,
     };
   }
 
   async create(data: Omit<ExportJob, 'id' | 'createdAt'>): Promise<ExportJob> {
-    const job: ExportJob = {
-      ...data,
-      id: crypto.randomUUID(),
-      createdAt: new Date(),
-    };
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .insert(toSnakeCase({
+        ...data,
+        status: data.status ?? 'pending',
+        filter: data.filter ?? {},
+      }))
+      .select()
+      .single();
 
-    this.jobs.set(job.id, job);
-    return job;
+    this.handleError(error, 'create');
+    return toCamelCase(result) as ExportJob;
   }
 
   async update(id: string, data: Partial<ExportJob>): Promise<ExportJob> {
-    const current = this.jobs.get(id);
-    if (!current) {
-      throw new Error(`Export job not found: ${id}`);
-    }
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .update(toSnakeCase(data))
+      .eq('id', id)
+      .select()
+      .single();
 
-    const next: ExportJob = { ...current, ...data };
-    this.jobs.set(id, next);
-    return next;
+    this.handleError(error, 'update');
+    return toCamelCase(result) as ExportJob;
   }
 }
 
-export class SupabaseMappingRepository implements IMappingRepository {
-  private readonly mappings = new Map<string, Mapping>();
+export class SupabaseMappingRepository extends SupabaseBaseRepository implements IMappingRepository {
+  constructor() {
+    super({ tableName: 'mappings', tenantIdColumn: 'tenant_id' });
+  }
 
   async findById(id: string): Promise<Mapping | null> {
-    return this.mappings.get(id) ?? null;
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    this.handleError(error, 'findById');
+    return data ? toCamelCase(data) as Mapping : null;
   }
 
   async findByTenant(tenantId: string): Promise<Mapping[]> {
-    return [...this.mappings.values()].filter((mapping) => mapping.tenantId === tenantId);
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('name', { ascending: true });
+
+    this.handleError(error, 'findByTenant');
+    return (data ?? []).map(toCamelCase) as Mapping[];
   }
 
   async findBySourceField(tenantId: string, sourceField: string): Promise<Mapping | null> {
-    return (
-      [...this.mappings.values()].find(
-        (mapping) => mapping.tenantId === tenantId && mapping.sourceField === sourceField,
-      ) ?? null
-    );
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('source_field', sourceField)
+      .single();
+
+    this.handleError(error, 'findBySourceField');
+    return data ? toCamelCase(data) as Mapping : null;
   }
 
   async create(data: Omit<Mapping, 'id'>): Promise<Mapping> {
@@ -124,28 +189,35 @@ export class SupabaseMappingRepository implements IMappingRepository {
       throw new DuplicateMappingError(data.sourceField, data.tenantId);
     }
 
-    const mapping: Mapping = {
-      ...data,
-      id: crypto.randomUUID(),
-    };
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .insert(toSnakeCase(data))
+      .select()
+      .single();
 
-    this.mappings.set(mapping.id, mapping);
-    return mapping;
+    this.handleError(error, 'create');
+    return toCamelCase(result) as Mapping;
   }
 
   async update(id: string, data: Partial<Mapping>): Promise<Mapping> {
-    const current = this.mappings.get(id);
-    if (!current) {
-      throw new Error(`Mapping not found: ${id}`);
-    }
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .update(toSnakeCase(data))
+      .eq('id', id)
+      .select()
+      .single();
 
-    const next: Mapping = { ...current, ...data };
-    this.mappings.set(id, next);
-    return next;
+    this.handleError(error, 'update');
+    return toCamelCase(result) as Mapping;
   }
 
   async delete(id: string): Promise<void> {
-    this.mappings.delete(id);
+    const { error } = await this.client
+      .from(this.tableName)
+      .delete()
+      .eq('id', id);
+
+    this.handleError(error, 'delete');
   }
 }
 

@@ -9,94 +9,145 @@ import type {
 import {
   InvalidLessonTimeError,
   ScheduleAlreadyPublishedError,
-  ScheduleVersionNotFoundError,
   type Conflict,
-  type Constraint,
   type Lesson,
   type Schedule,
   type ScheduleVersion,
 } from '@ordo/domain/scheduling';
+import { SupabaseBaseRepository, toCamelCase, toSnakeCase } from './base';
 
-export class SupabaseScheduleRepository implements IScheduleRepository {
-  private readonly schedules = new Map<string, Schedule>();
+export class SupabaseScheduleRepository extends SupabaseBaseRepository implements IScheduleRepository {
+  constructor() {
+    super({ tableName: 'schedules', tenantIdColumn: 'tenant_id' });
+  }
 
   async findById(id: string): Promise<Schedule | null> {
-    return this.schedules.get(id) ?? null;
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    this.handleError(error, 'findById');
+    return data ? toCamelCase(data) as Schedule : null;
   }
 
   async findByTenantAndSemester(tenantId: string, semesterId: string): Promise<Schedule[]> {
-    return [...this.schedules.values()].filter(
-      (schedule) => schedule.tenantId === tenantId && schedule.semesterId === semesterId,
-    );
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('semester_id', semesterId)
+      .order('created_at', { ascending: false });
+
+    this.handleError(error, 'findByTenantAndSemester');
+    return (data ?? []).map(toCamelCase) as Schedule[];
   }
 
   async create(data: Omit<Schedule, 'id' | 'createdAt' | 'publishedAt'>): Promise<Schedule> {
-    const schedule: Schedule = {
-      ...data,
-      id: crypto.randomUUID(),
-      createdAt: new Date(),
-      publishedAt: null,
-    };
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .insert(toSnakeCase({
+        ...data,
+        status: data.status ?? 'draft',
+        publishedAt: null,
+      }))
+      .select()
+      .single();
 
-    this.schedules.set(schedule.id, schedule);
-    return schedule;
+    this.handleError(error, 'create');
+    return toCamelCase(result) as Schedule;
   }
 
   async update(id: string, data: Partial<Schedule>): Promise<Schedule> {
-    const current = this.schedules.get(id);
-    if (!current) {
-      throw new Error(`Schedule not found: ${id}`);
-    }
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .update(toSnakeCase(data))
+      .eq('id', id)
+      .select()
+      .single();
 
-    const next: Schedule = { ...current, ...data };
-    this.schedules.set(id, next);
-    return next;
+    this.handleError(error, 'update');
+    return toCamelCase(result) as Schedule;
   }
 
   async delete(id: string): Promise<void> {
-    this.schedules.delete(id);
+    const { error } = await this.client
+      .from(this.tableName)
+      .delete()
+      .eq('id', id);
+
+    this.handleError(error, 'delete');
   }
 }
 
-export class SupabaseScheduleVersionRepository implements IScheduleVersionRepository {
-  private readonly versions = new Map<string, ScheduleVersion>();
+export class SupabaseScheduleVersionRepository extends SupabaseBaseRepository implements IScheduleVersionRepository {
+  constructor() {
+    super({ tableName: 'schedule_versions', tenantIdColumn: 'tenant_id' });
+  }
 
   async findById(id: string): Promise<ScheduleVersion | null> {
-    return this.versions.get(id) ?? null;
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    this.handleError(error, 'findById');
+    return data ? toCamelCase(data) as ScheduleVersion : null;
   }
 
   async findBySchedule(scheduleId: string): Promise<ScheduleVersion[]> {
-    return [...this.versions.values()].filter((version) => version.scheduleId === scheduleId);
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('schedule_id', scheduleId)
+      .order('version_number', { ascending: true });
+
+    this.handleError(error, 'findBySchedule');
+    return (data ?? []).map(toCamelCase) as ScheduleVersion[];
   }
 
   async create(data: Omit<ScheduleVersion, 'id' | 'createdAt'>): Promise<ScheduleVersion> {
-    const version: ScheduleVersion = {
-      ...data,
-      id: crypto.randomUUID(),
-      createdAt: new Date(),
-    };
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .insert(toSnakeCase(data))
+      .select()
+      .single();
 
-    this.versions.set(version.id, version);
-    return version;
+    this.handleError(error, 'create');
+    return toCamelCase(result) as ScheduleVersion;
   }
 
   async getLatest(scheduleId: string): Promise<ScheduleVersion | null> {
-    const versions = await this.findBySchedule(scheduleId);
-    return versions.reduce<ScheduleVersion | null>((latest, version) => {
-      if (!latest || version.versionNumber > latest.versionNumber) {
-        return version;
-      }
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('schedule_id', scheduleId)
+      .order('version_number', { ascending: false })
+      .limit(1)
+      .single();
 
-      return latest;
-    }, null);
+    this.handleError(error, 'getLatest');
+    return data ? toCamelCase(data) as ScheduleVersion : null;
   }
 }
 
-export class SupabaseLessonRepository implements ILessonRepository {
-  private readonly lessons = new Map<string, Lesson>();
+export class SupabaseLessonRepository extends SupabaseBaseRepository implements ILessonRepository {
+  constructor() {
+    super({ tableName: 'lessons', tenantIdColumn: 'tenant_id' });
+  }
 
   async findByVersion(versionId: string): Promise<Lesson[]> {
-    return [...this.lessons.values()].filter((lesson) => lesson.versionId === versionId);
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('version_id', versionId)
+      .order('day_of_week', { ascending: true })
+      .order('pair_number', { ascending: true });
+
+    this.handleError(error, 'findByVersion');
+    return (data ?? []).map(toCamelCase) as Lesson[];
   }
 
   async create(data: Omit<Lesson, 'id'>): Promise<Lesson> {
@@ -104,79 +155,166 @@ export class SupabaseLessonRepository implements ILessonRepository {
       throw new InvalidLessonTimeError(data.timeStart, data.timeEnd);
     }
 
-    const lesson: Lesson = {
-      ...data,
-      id: crypto.randomUUID(),
-    };
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .insert(toSnakeCase(data))
+      .select()
+      .single();
 
-    this.lessons.set(lesson.id, lesson);
-    return lesson;
+    this.handleError(error, 'create');
+    return toCamelCase(result) as Lesson;
   }
 
   async update(id: string, data: Partial<Lesson>): Promise<Lesson> {
-    const current = this.lessons.get(id);
-    if (!current) {
-      throw new ScheduleVersionNotFoundError(id);
-    }
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .update(toSnakeCase(data))
+      .eq('id', id)
+      .select()
+      .single();
 
-    const next: Lesson = { ...current, ...data };
-    this.lessons.set(id, next);
-    return next;
+    this.handleError(error, 'update');
+    return toCamelCase(result) as Lesson;
   }
 
   async delete(id: string): Promise<void> {
-    this.lessons.delete(id);
+    const { error } = await this.client
+      .from(this.tableName)
+      .delete()
+      .eq('id', id);
+
+    this.handleError(error, 'delete');
   }
 
   async deleteByVersion(versionId: string): Promise<void> {
-    for (const [id, lesson] of this.lessons.entries()) {
-      if (lesson.versionId === versionId) {
-        this.lessons.delete(id);
-      }
-    }
+    const { error } = await this.client
+      .from(this.tableName)
+      .delete()
+      .eq('version_id', versionId);
+
+    this.handleError(error, 'deleteByVersion');
   }
 }
 
-export class SupabaseConflictDetector implements IConflictDetector {
-  private readonly conflicts = new Map<string, Conflict[]>();
+export class SupabaseConflictDetector extends SupabaseBaseRepository implements IConflictDetector {
+  constructor() {
+    super({ tableName: 'conflicts', tenantIdColumn: 'tenant_id' });
+  }
 
   async detect(versionId: string): Promise<Conflict[]> {
-    return this.conflicts.get(versionId) ?? [];
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('version_id', versionId)
+      .order('created_at', { ascending: true });
+
+    this.handleError(error, 'detect');
+    return (data ?? []).map(toCamelCase) as Conflict[];
   }
 
   checkLesson(lesson: Omit<Lesson, 'id'>, existingLessons: Lesson[]): Conflict[] {
-    const teacherDoubleBooked = existingLessons.some(
+    const conflicts: Conflict[] = [];
+
+    // Teacher double booked
+    const teacherConflict = existingLessons.find(
       (current) =>
         current.teacherId === lesson.teacherId &&
         current.dayOfWeek === lesson.dayOfWeek &&
-        current.pairNumber === lesson.pairNumber,
+        current.pairNumber === lesson.pairNumber &&
+        (current.weekType === lesson.weekType || current.weekType === 'all' || lesson.weekType === 'all')
     );
 
-    if (teacherDoubleBooked) {
-      return [
-        {
-          id: `conflict-${crypto.randomUUID()}`,
-          versionId: lesson.versionId,
-          type: 'teacher_double_booked',
-          severity: 'hard',
-          lessonIds: [lesson.teacherId],
-          description: `Teacher ${lesson.teacherId} is double booked`,
-        },
-      ];
+    if (teacherConflict) {
+      conflicts.push({
+        id: `conflict-${crypto.randomUUID()}`,
+        versionId: lesson.versionId,
+        type: 'teacher_double_booked',
+        severity: 'hard',
+        lessonIds: [teacherConflict.id],
+        description: `Teacher ${lesson.teacherId} is double booked on day ${lesson.dayOfWeek} pair ${lesson.pairNumber}`,
+      });
     }
 
-    return [];
+    // Group double booked
+    const groupConflict = existingLessons.find(
+      (current) =>
+        current.groupId === lesson.groupId &&
+        current.dayOfWeek === lesson.dayOfWeek &&
+        current.pairNumber === lesson.pairNumber &&
+        (current.weekType === lesson.weekType || current.weekType === 'all' || lesson.weekType === 'all')
+    );
+
+    if (groupConflict) {
+      conflicts.push({
+        id: `conflict-${crypto.randomUUID()}`,
+        versionId: lesson.versionId,
+        type: 'group_double_booked',
+        severity: 'hard',
+        lessonIds: [groupConflict.id],
+        description: `Group ${lesson.groupId} already has a lesson on day ${lesson.dayOfWeek} pair ${lesson.pairNumber}`,
+      });
+    }
+
+    // Room double booked
+    const roomConflict = existingLessons.find(
+      (current) =>
+        current.roomId === lesson.roomId &&
+        current.dayOfWeek === lesson.dayOfWeek &&
+        current.pairNumber === lesson.pairNumber &&
+        (current.weekType === lesson.weekType || current.weekType === 'all' || lesson.weekType === 'all')
+    );
+
+    if (roomConflict) {
+      conflicts.push({
+        id: `conflict-${crypto.randomUUID()}`,
+        versionId: lesson.versionId,
+        type: 'room_double_booked',
+        severity: 'hard',
+        lessonIds: [roomConflict.id],
+        description: `Room ${lesson.roomId} is double booked on day ${lesson.dayOfWeek} pair ${lesson.pairNumber}`,
+      });
+    }
+
+    return conflicts;
   }
 }
 
-export class SupabaseConstraintEngine implements IConstraintEngine {
-  private readonly constraints = new Map<string, Constraint[]>();
+export class SupabaseConstraintEngine extends SupabaseBaseRepository implements IConstraintEngine {
+  constructor() {
+    super({ tableName: 'constraints', tenantIdColumn: 'tenant_id' });
+  }
 
   async check(versionId: string): Promise<Conflict[]> {
-    const constraints = this.constraints.get(versionId) ?? [];
-    if (constraints.length === 0) {
-      return [];
-    }
+    // Get version to find tenant
+    const { data: version, error: versionError } = await this.client
+      .from('schedule_versions')
+      .select('schedule_id')
+      .eq('id', versionId)
+      .single();
+
+    this.handleError(versionError, 'check - get version');
+
+    if (!version) return [];
+
+    const { data: schedule, error: scheduleError } = await this.client
+      .from('schedules')
+      .select('tenant_id')
+      .eq('id', version.schedule_id)
+      .single();
+
+    this.handleError(scheduleError, 'check - get schedule');
+
+    if (!schedule) return [];
+
+    const { data: constraints, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('tenant_id', schedule.tenant_id)
+      .eq('is_active', true);
+
+    this.handleError(error, 'check - get constraints');
+
+    if (!constraints || constraints.length === 0) return [];
 
     return constraints.map((constraint) => ({
       id: `constraint-${crypto.randomUUID()}`,
@@ -189,58 +327,95 @@ export class SupabaseConstraintEngine implements IConstraintEngine {
   }
 
   validateLesson(lesson: Lesson, versionId: string): Conflict[] {
-    void versionId;
-
     if (lesson.timeStart >= lesson.timeEnd) {
-      return [
-        {
-          id: `conflict-${crypto.randomUUID()}`,
-          versionId,
-          type: 'constraint_violated',
-          severity: 'hard',
-          lessonIds: [lesson.id],
-          description: `Lesson ${lesson.id} has invalid time range`,
-        },
-      ];
+      return [{
+        id: `conflict-${crypto.randomUUID()}`,
+        versionId,
+        type: 'constraint_violated',
+        severity: 'hard',
+        lessonIds: [lesson.id],
+        description: `Lesson ${lesson.id} has invalid time range`,
+      }];
     }
-
     return [];
   }
 }
 
-export class SupabasePublicationService implements IPublicationService {
-  private readonly schedules = new Map<string, Schedule>();
+export class SupabasePublicationService extends SupabaseBaseRepository implements IPublicationService {
+  constructor() {
+    super({ tableName: 'schedules', tenantIdColumn: 'tenant_id' });
+  }
 
   async publish(scheduleId: string, versionId: string, userId: string): Promise<void> {
-    const current = this.schedules.get(scheduleId);
-    if (!current) {
+    const { data: schedule, error: findError } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('id', scheduleId)
+      .single();
+
+    this.handleError(findError, 'publish - find');
+
+    if (!schedule) {
       throw new Error(`Schedule not found: ${scheduleId}`);
     }
 
-    if (current.status === 'published') {
+    if (schedule.status === 'published') {
       throw new ScheduleAlreadyPublishedError(scheduleId);
     }
 
-    this.schedules.set(scheduleId, {
-      ...current,
-      status: 'published',
-      publishedAt: new Date(),
-    });
+    // Create published_schedules entry
+    const { error: pubError } = await this.client
+      .from('published_schedules')
+      .insert({
+        tenant_id: schedule.tenant_id,
+        schedule_version_id: versionId,
+        published_by: userId,
+      });
 
-    void versionId;
-    void userId;
+    this.handleError(pubError, 'publish - create published_schedules');
+
+    // Update schedule status
+    const { error: updateError } = await this.client
+      .from(this.tableName)
+      .update({
+        status: 'published',
+        published_at: new Date().toISOString(),
+      })
+      .eq('id', scheduleId);
+
+    this.handleError(updateError, 'publish - update schedule');
   }
 
   async unpublish(scheduleId: string): Promise<void> {
-    const current = this.schedules.get(scheduleId);
-    if (!current) {
+    const { data: schedule, error: findError } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('id', scheduleId)
+      .single();
+
+    this.handleError(findError, 'unpublish - find');
+
+    if (!schedule) {
       throw new Error(`Schedule not found: ${scheduleId}`);
     }
 
-    this.schedules.set(scheduleId, {
-      ...current,
-      status: 'draft',
-      publishedAt: null,
-    });
+    // Delete published_schedules entry
+    const { error: delError } = await this.client
+      .from('published_schedules')
+      .delete()
+      .eq('schedule_version_id', scheduleId);
+
+    this.handleError(delError, 'unpublish - delete published_schedules');
+
+    // Update schedule status
+    const { error: updateError } = await this.client
+      .from(this.tableName)
+      .update({
+        status: 'draft',
+        published_at: null,
+      })
+      .eq('id', scheduleId);
+
+    this.handleError(updateError, 'unpublish - update schedule');
   }
 }

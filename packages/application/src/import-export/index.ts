@@ -132,8 +132,11 @@ export class StartImportUseCaseImpl implements StartImportUseCase {
       tenantId: dto.tenantId,
       userId: dto.userId,
       fileName: dto.fileName,
+      format: 'xlsx',
       status: 'processing',
+      processedRows: 0,
       result: { importedRecords: records.length },
+      updatedAt: new Date(),
     });
 
     return {
@@ -159,7 +162,10 @@ export class StartExportUseCaseImpl implements StartExportUseCase {
       userId: dto.userId,
       format: dto.format,
       status: 'processing',
+      entity: dto.entityType as 'schedule' | 'teachers' | 'groups' | 'rooms',
+      filter: dto.filters,
       result: { bytes: buffer.length },
+      updatedAt: new Date(),
     });
   }
 }
@@ -217,8 +223,11 @@ export class CreateMappingUseCaseImpl implements CreateMappingUseCase {
 
     return this.mappingRepository.create({
       tenantId: dto.tenantId,
+      name: dto.sourceField,
       sourceField: dto.sourceField,
       targetField: dto.targetField,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
   }
 }

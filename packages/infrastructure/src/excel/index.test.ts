@@ -7,7 +7,7 @@ describe('ExcelParser', () => {
     const parser = new ExcelParser();
     const buffer = Buffer.from('student_name,group\nAlice,101\nBob,102', 'utf-8');
 
-    const records = await parser.parse(buffer, [{ id: 'm1', tenantId: 't1', sourceField: 'student_name', targetField: 'fullName' }]);
+    const records = await parser.parse(buffer, [{ id: 'm1', tenantId: 't1', name: 'student_name', sourceField: 'student_name', targetField: 'fullName', createdAt: new Date(), updatedAt: new Date() }]);
 
     expect(records).toEqual([
       { fullName: 'Alice', group: '101' },

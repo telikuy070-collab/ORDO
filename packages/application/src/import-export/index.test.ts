@@ -121,8 +121,11 @@ describe('import-export application use cases', () => {
       tenantId: 'tenant-1',
       userId: 'user-5',
       fileName: 'students.csv',
+      format: 'xlsx',
       status: 'pending',
+      processedRows: 0,
       result: { importedRecords: 0 },
+      updatedAt: new Date(),
     });
 
     const useCase = new ListImportJobsUseCaseImpl(repo);

@@ -7,80 +7,183 @@ import type {
 import {
   DuplicatePreferenceError,
   InvalidRoomCapacityError,
-  RoomNotAvailableError,
-  TeacherNotFoundError,
   type Building,
   type Room,
   type Teacher,
   type TeacherPreference,
 } from '@ordo/domain';
+import { SupabaseBaseRepository, toCamelCase, toSnakeCase } from './base';
 
-export class SupabaseTeacherRepository implements ITeacherRepository {
-  private readonly teachers = new Map<string, Teacher>();
+export class SupabaseTeacherRepository extends SupabaseBaseRepository implements ITeacherRepository {
+  constructor() {
+    super({ tableName: 'teachers', tenantIdColumn: 'tenant_id' });
+  }
 
   async findById(id: string): Promise<Teacher | null> {
-    return this.teachers.get(id) ?? null;
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    this.handleError(error, 'findById');
+    return data ? toCamelCase(data) as Teacher : null;
   }
 
   async findByTenant(tenantId: string): Promise<Teacher[]> {
-    return [...this.teachers.values()].filter((teacher) => teacher.tenantId === tenantId);
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('full_name', { ascending: true });
+
+    this.handleError(error, 'findByTenant');
+    return (data ?? []).map(toCamelCase) as Teacher[];
   }
 
   async findByUserId(userId: string): Promise<Teacher | null> {
-    return [...this.teachers.values()].find((teacher) => teacher.userId === userId) ?? null;
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    this.handleError(error, 'findByUserId');
+    return data ? toCamelCase(data) as Teacher : null;
   }
 
   async create(data: Omit<Teacher, 'id'>): Promise<Teacher> {
-    const teacher: Teacher = {
-      ...data,
-      id: crypto.randomUUID(),
-    };
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .insert(toSnakeCase({
+        ...data,
+        isActive: data.isActive ?? true,
+      }))
+      .select()
+      .single();
 
-    this.teachers.set(teacher.id, teacher);
-    return teacher;
+    this.handleError(error, 'create');
+    return toCamelCase(result) as Teacher;
   }
 
   async update(id: string, data: Partial<Teacher>): Promise<Teacher> {
-    const current = this.teachers.get(id);
-    if (!current) {
-      throw new TeacherNotFoundError(id);
-    }
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .update(toSnakeCase(data))
+      .eq('id', id)
+      .select()
+      .single();
 
-    const next: Teacher = {
-      ...current,
-      ...data,
-    };
-
-    this.teachers.set(id, next);
-    return next;
+    this.handleError(error, 'update');
+    return toCamelCase(result) as Teacher;
   }
 
   async delete(id: string): Promise<void> {
-    this.teachers.delete(id);
+    const { error } = await this.client
+      .from(this.tableName)
+      .delete()
+      .eq('id', id);
+
+    this.handleError(error, 'delete');
   }
 }
 
-export class SupabaseRoomRepository implements IRoomRepository {
-  private readonly rooms = new Map<string, Room>();
+export class SupabaseRoomRepository extends SupabaseBaseRepository implements IRoomRepository {
+  constructor() {
+    super({ tableName: 'rooms', tenantIdColumn: 'tenant_id' });
+  }
 
   async findById(id: string): Promise<Room | null> {
-    return this.rooms.get(id) ?? null;
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    this.handleError(error, 'findById');
+    return data ? toCamelCase(data) as Room : null;
   }
 
   async findByTenant(tenantId: string): Promise<Room[]> {
-    return [...this.rooms.values()].filter((room) => room.tenantId === tenantId);
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('number', { ascending: true });
+
+    this.handleError(error, 'findByTenant');
+    return (data ?? []).map(toCamelCase) as Room[];
   }
 
   async findByBuilding(buildingId: string): Promise<Room[]> {
-    return [...this.rooms.values()].filter((room) => room.buildingId === buildingId);
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('building_id', buildingId)
+      .order('number', { ascending: true });
+
+    this.handleError(error, 'findByBuilding');
+    return (data ?? []).map(toCamelCase) as Room[];
   }
 
   async findAvailable(tenantId: string, dayOfWeek: number, pairNumber: number, weekType: string): Promise<Room[]> {
-    void dayOfWeek;
-    void pairNumber;
-    void weekType;
+    // Get all rooms for tenant
+    const { data: rooms, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .gt('capacity', 0)
+      .order('capacity', { ascending: true });
 
-    return [...this.rooms.values()].filter((room) => room.tenantId === tenantId && room.capacity > 0);
+    this.handleError(error, 'findAvailable');
+
+    if (!rooms || rooms.length === 0) return [];
+
+    // Get draft schedule IDs for this tenant
+    const { data: draftSchedules, error: scheduleError } = await this.client
+      .from('schedules')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('status', 'draft');
+
+    this.handleError(scheduleError, 'findAvailable - draft schedules');
+
+    if (!draftSchedules || draftSchedules.length === 0) {
+      return rooms.map(toCamelCase) as Room[];
+    }
+
+    const scheduleIds = draftSchedules.map(s => s.id);
+
+    // Get version IDs for these schedules
+    const { data: versions, error: versionError } = await this.client
+      .from('schedule_versions')
+      .select('id')
+      .in('schedule_id', scheduleIds);
+
+    this.handleError(versionError, 'findAvailable - versions');
+
+    if (!versions || versions.length === 0) {
+      return rooms.map(toCamelCase) as Room[];
+    }
+
+    const versionIds = versions.map(v => v.id);
+
+    // Get lessons that conflict with the time slot
+    const { data: conflictingLessons, error: lessonError } = await this.client
+      .from('lessons')
+      .select('room_id')
+      .eq('day_of_week', dayOfWeek)
+      .eq('pair_number', pairNumber)
+      .in('week_type', [weekType, 'all'])
+      .in('version_id', versionIds);
+
+    this.handleError(lessonError, 'findAvailable - conflicting lessons');
+
+    const bookedRoomIds = new Set((conflictingLessons ?? []).map(l => l.room_id));
+
+    return rooms
+      .filter(room => !bookedRoomIds.has(room.id))
+      .map(toCamelCase) as Room[];
   }
 
   async create(data: Omit<Room, 'id'>): Promise<Room> {
@@ -88,135 +191,177 @@ export class SupabaseRoomRepository implements IRoomRepository {
       throw new InvalidRoomCapacityError(data.capacity);
     }
 
-    const room: Room = {
-      ...data,
-      id: crypto.randomUUID(),
-    };
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .insert(toSnakeCase(data))
+      .select()
+      .single();
 
-    this.rooms.set(room.id, room);
-    return room;
+    this.handleError(error, 'create');
+    return toCamelCase(result) as Room;
   }
 
   async update(id: string, data: Partial<Room>): Promise<Room> {
-    const current = this.rooms.get(id);
-    if (!current) {
-      throw new RoomNotAvailableError(id);
-    }
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .update(toSnakeCase(data))
+      .eq('id', id)
+      .select()
+      .single();
 
-    const next: Room = {
-      ...current,
-      ...data,
-    };
-
-    this.rooms.set(id, next);
-    return next;
+    this.handleError(error, 'update');
+    return toCamelCase(result) as Room;
   }
 
   async delete(id: string): Promise<void> {
-    this.rooms.delete(id);
+    const { error } = await this.client
+      .from(this.tableName)
+      .delete()
+      .eq('id', id);
+
+    this.handleError(error, 'delete');
   }
 }
 
-export class SupabaseBuildingRepository implements IBuildingRepository {
-  private readonly buildings = new Map<string, Building>();
+export class SupabaseBuildingRepository extends SupabaseBaseRepository implements IBuildingRepository {
+  constructor() {
+    super({ tableName: 'buildings', tenantIdColumn: 'tenant_id' });
+  }
 
   async findById(id: string): Promise<Building | null> {
-    return this.buildings.get(id) ?? null;
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    this.handleError(error, 'findById');
+    return data ? toCamelCase(data) as Building : null;
   }
 
   async findByTenant(tenantId: string): Promise<Building[]> {
-    return [...this.buildings.values()].filter((building) => building.tenantId === tenantId);
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('name', { ascending: true });
+
+    this.handleError(error, 'findByTenant');
+    return (data ?? []).map(toCamelCase) as Building[];
   }
 
   async create(data: Omit<Building, 'id'>): Promise<Building> {
-    const building: Building = {
-      ...data,
-      id: crypto.randomUUID(),
-    };
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .insert(toSnakeCase(data))
+      .select()
+      .single();
 
-    this.buildings.set(building.id, building);
-    return building;
+    this.handleError(error, 'create');
+    return toCamelCase(result) as Building;
   }
 
   async update(id: string, data: Partial<Building>): Promise<Building> {
-    const current = this.buildings.get(id);
-    if (!current) {
-      throw new Error(`Building not found: ${id}`);
-    }
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .update(toSnakeCase(data))
+      .eq('id', id)
+      .select()
+      .single();
 
-    const next: Building = {
-      ...current,
-      ...data,
-    };
-
-    this.buildings.set(id, next);
-    return next;
+    this.handleError(error, 'update');
+    return toCamelCase(result) as Building;
   }
 
   async delete(id: string): Promise<void> {
-    this.buildings.delete(id);
+    const { error } = await this.client
+      .from(this.tableName)
+      .delete()
+      .eq('id', id);
+
+    this.handleError(error, 'delete');
   }
 }
 
-export class SupabasePreferenceRepository implements IPreferenceRepository {
-  private readonly preferences = new Map<string, TeacherPreference>();
-  private readonly teachers = new Map<string, Teacher>();
+export class SupabasePreferenceRepository extends SupabaseBaseRepository implements IPreferenceRepository {
+  constructor() {
+    super({ tableName: 'teacher_preferences', tenantIdColumn: 'tenant_id' });
+  }
 
   async findByTeacher(teacherId: string): Promise<TeacherPreference[]> {
-    return [...this.preferences.values()].filter((preference) => preference.teacherId === teacherId);
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('teacher_id', teacherId)
+      .order('day_of_week', { ascending: true })
+      .order('pair_number', { ascending: true });
+
+    this.handleError(error, 'findByTeacher');
+    return (data ?? []).map(toCamelCase) as TeacherPreference[];
   }
 
   async findByTenant(tenantId: string): Promise<TeacherPreference[]> {
-    const teacherIds = new Set(
-      [...this.teachers.values()].filter((teacher) => teacher.tenantId === tenantId).map((teacher) => teacher.id),
-    );
+    const { data, error } = await this.client
+      .from(this.tableName)
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('teacher_id', { ascending: true })
+      .order('day_of_week', { ascending: true })
+      .order('pair_number', { ascending: true });
 
-    return [...this.preferences.values()].filter((preference) => teacherIds.has(preference.teacherId));
+    this.handleError(error, 'findByTenant');
+    return (data ?? []).map(toCamelCase) as TeacherPreference[];
   }
 
   async create(data: Omit<TeacherPreference, 'id'>): Promise<TeacherPreference> {
-    const teacher = this.teachers.get(data.teacherId);
-    if (!teacher) {
-      throw new TeacherNotFoundError(data.teacherId);
-    }
+    // Check for duplicate
+    const { data: existing, error: checkError } = await this.client
+      .from(this.tableName)
+      .select('id')
+      .eq('teacher_id', data.teacherId)
+      .eq('type', data.type)
+      .eq('day_of_week', data.dayOfWeek)
+      .eq('pair_number', data.pairNumber)
+      .single();
 
-    const duplicate = [...this.preferences.values()].some(
-      (preference) =>
-        preference.teacherId === data.teacherId &&
-        preference.type === data.type &&
-        preference.dayOfWeek === data.dayOfWeek &&
-        preference.pairNumber === data.pairNumber,
-    );
+    this.handleError(checkError, 'create - check duplicate');
 
-    if (duplicate) {
+    if (existing) {
       throw new DuplicatePreferenceError(data.teacherId, data.type, data.dayOfWeek, data.pairNumber);
     }
 
-    const preference: TeacherPreference = {
-      ...data,
-      id: crypto.randomUUID(),
-    };
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .insert(toSnakeCase({
+        ...data,
+        status: data.status ?? 'pending',
+        comment: data.comment ?? '',
+      }))
+      .select()
+      .single();
 
-    this.preferences.set(preference.id, preference);
-    return preference;
+    this.handleError(error, 'create');
+    return toCamelCase(result) as TeacherPreference;
   }
 
   async update(id: string, data: Partial<TeacherPreference>): Promise<TeacherPreference> {
-    const current = this.preferences.get(id);
-    if (!current) {
-      throw new Error(`Preference not found: ${id}`);
-    }
+    const { data: result, error } = await this.client
+      .from(this.tableName)
+      .update(toSnakeCase(data))
+      .eq('id', id)
+      .select()
+      .single();
 
-    const next: TeacherPreference = {
-      ...current,
-      ...data,
-    };
-
-    this.preferences.set(id, next);
-    return next;
+    this.handleError(error, 'update');
+    return toCamelCase(result) as TeacherPreference;
   }
 
   async delete(id: string): Promise<void> {
-    this.preferences.delete(id);
+    const { error } = await this.client
+      .from(this.tableName)
+      .delete()
+      .eq('id', id);
+
+    this.handleError(error, 'delete');
   }
 }

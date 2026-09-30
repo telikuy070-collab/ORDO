@@ -9,9 +9,16 @@ export interface ImportJob {
   tenantId: string;
   userId: string;
   fileName: string;
+  fileSize?: number;
+  format: ExportFormat;
   status: JobStatus;
+  totalRows?: number;
+  processedRows: number;
+  mappingId?: string;
+  createdBy?: string;
   result: Record<string, unknown>;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface ExportJob {
@@ -20,15 +27,26 @@ export interface ExportJob {
   userId: string;
   format: ExportFormat;
   status: JobStatus;
+  entity: 'schedule' | 'teachers' | 'groups' | 'rooms';
+  filter: Record<string, unknown>;
+  filePath?: string;
+  fileSize?: number;
+  createdBy?: string;
   result: Record<string, unknown>;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface Mapping {
   id: string;
   tenantId: string;
+  name: string;
   sourceField: string;
   targetField: string;
+  fields?: Record<string, unknown>[];
+  createdBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export class ImportJobNotFoundError extends Error {
